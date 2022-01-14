@@ -14,6 +14,8 @@ def calculate_waveform_metrics(waveforms,
                                spread_threshold,
                                site_range,
                                site_spacing,
+                               site_x,
+                               site_y,
                                epoch_name):
     
     """
@@ -45,6 +47,8 @@ def calculate_waveform_metrics(waveforms,
         Number of sites to use for 2D waveform metrics
     site_spacing : float
         Average vertical distance between sites (m)
+    site_x, site_y : float
+        Channel positions (um)
 
     Outputs:
     -------
@@ -55,8 +59,16 @@ def calculate_waveform_metrics(waveforms,
 
     snr = calculate_snr(waveforms[:, peak_channel, :])
 
-    mean_2D_waveform = np.squeeze(np.nanmean(waveforms[:, channel_map, :], 0))
-    local_peak = np.argmin(np.abs(channel_map - peak_channel))
+    #mean_2D_waveform = np.squeeze(np.nanmean(waveforms[:, channel_map, :], 0))
+    #local_peak = np.argmin(np.abs(channel_map - peak_channel))
+    
+    # all metric calculations are restricted to the channels in the map
+    # jic removed this -- we need to sample all channels for 2D calculations
+    # moreover, this is assumed in the standard Allen calculation
+    # mean_2D_waveform = np.squeeze(avg_waveform[channel_map, :])
+    # local_peak = np.argmin(np.abs(channel_map - peak_channel))
+    mean_2D_waveform = np.squeeze(np.nanmean(waveforms, 0))
+    local_peak = peak_channel
 
     num_samples = waveforms.shape[2]
     new_sample_count = int(num_samples * upsampling_factor)
@@ -75,7 +87,7 @@ def calculate_waveform_metrics(waveforms,
         mean_1D_waveform, timestamps)
 
     amplitude, spread, velocity_above, velocity_below = calculate_2D_features(
-        mean_2D_waveform, timestamps, local_peak, spread_threshold, site_range, site_spacing)
+        mean_2D_waveform, timestamps, local_peak, site_x, site_y, spread_threshold, site_range, site_spacing)
 
     data = [[cluster_id, epoch_name, peak_channel, snr, duration, halfwidth, PT_ratio, repolarization_slope,
               recovery_slope, amplitude, spread, velocity_above, velocity_below]]

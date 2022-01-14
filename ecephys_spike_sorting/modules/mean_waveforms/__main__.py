@@ -156,6 +156,18 @@ def calculate_mean_waveforms(args):
         
         print('Calculating mean waveforms using python.')
         print("Loading data...")
+        
+        # The waveform metrics are calculated on ALL sites
+        # based on the mean waveforms calculated for each unit; therefore
+        # we need the site locations for all sites.
+        # load the channel map associated with this kilosort run; in kilosort_helper
+        # a copy is made next to the data file
+        input_file = args['ephys_params']['ap_band_file']
+        dat_dir, dat_fname = os.path.split(input_file)
+        dat_name, dat_ext = os.path.splitext(dat_fname)
+        chanMapMat = os.path.join(dat_dir, (dat_name +'_chanMap.mat'))
+        site_x = np.squeeze(loadmat(chanMapMat)['xcoords'])
+        site_y = np.squeeze(loadmat(chanMapMat)['ycoords'])
     
         rawData = np.memmap(args['ephys_params']['ap_band_file'], dtype='int16', mode='r')
         data = np.reshape(rawData, (int(rawData.size/args['ephys_params']['num_channels']), args['ephys_params']['num_channels']))
@@ -175,6 +187,8 @@ def calculate_mean_waveforms(args):
                     args['ephys_params']['bit_volts'], \
                     args['ephys_params']['sample_rate'], \
                     args['ephys_params']['vertical_site_spacing'], \
+                    site_x, \
+                    site_y, \
                     args['mean_waveform_params'])
     
         writeDataAsNpy(waveforms, args['mean_waveform_params']['mean_waveforms_file'])
