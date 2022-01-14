@@ -53,8 +53,8 @@ def plotKsTemplates(ks_directory, raw_data_file, sample_rate = 30000, bit_volts 
     if fig is None:
         fig = plt.figure(figsize=(16,10))
 
-    start_index = time_range[0] * sample_rate
-    end_index = time_range[1] * sample_rate
+    start_index = int(time_range[0] * sample_rate)
+    end_index = int(time_range[1] * sample_rate)
 
     b, a = butter(3, [300/(sample_rate/2), 2000/(sample_rate/2)], btype='band')
 

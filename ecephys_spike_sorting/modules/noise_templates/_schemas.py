@@ -30,6 +30,7 @@ class NoiseWaveformParams(DefaultSchema):
 
     multiprocessing_worker_count = Int(default=4, help='Number of workers to use for spatial peak calculation')
     use_random_forest = Boolean(default=False, help='set to false to use heuristic  noise id')
+    use_preclustered = Boolean(default=False, help = 'use clusters from cluster_group.tsv or not')
 
 class InputParameters(ArgSchema):
     

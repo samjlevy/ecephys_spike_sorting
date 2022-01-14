@@ -28,8 +28,18 @@ def classify_noise_templates(args):
                     cluster_ids, templates, args['noise_waveform_params'])
     else:
         # use heuristics to identify templates that look like noise
-        cluster_ids, is_noise = id_noise_templates(cluster_ids, templates, np.squeeze(channel_map), \
-            args['noise_waveform_params'])
+        if args['noise_waveform_params']['use_preclustered']:
+            cluster_ids, is_noise = id_noise_templates(cluster_ids, templates, np.squeeze(channel_map), \
+                                args['noise_waveform_params'])
+        else:
+            try:
+                cluster_ids = np.unique(spike_clusters)
+                cluster_ids, is_noise = id_noise_templates(cluster_ids, templates, np.squeeze(channel_map), \
+                                    args['noise_waveform_params'])
+            except:
+                cluster_ids = np.unique(spike_templates)
+                cluster_ids, is_noise = id_noise_templates(cluster_ids, templates, np.squeeze(channel_map), \
+                                args['noise_waveform_params'])
 
     mapping = {False: 'good', True: 'noise'}
     labels = [mapping[value] for value in is_noise]
