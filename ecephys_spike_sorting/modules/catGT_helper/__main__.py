@@ -72,10 +72,11 @@ def run_CatGT(args):
     logName = 'CatGT.log'
    
          
-    catgt_runName = 'catgt_' + args['catGT_helper_params']['run_name'] + '_g' + args['catGT_helper_params']['gate_string']
+    read_catgt_runName = 'catgt_' + args['catGT_helper_params']['run_name'] + '_g' + args['catGT_helper_params']['gate_string'][0]
+    write_catgt_runName = 'catgt_' + args['catGT_helper_params']['run_name'] + '_g' + args['catGT_helper_params']['gate_list_string']
     
     # build name for log copy
-    catgt_logName = catgt_runName
+    catgt_logName = write_catgt_runName
     if 'ap' in args['catGT_helper_params']['stream_string']:
         prb_title = ParseProbeStr(args['catGT_helper_params']['probe_string'])
         catgt_logName = catgt_logName + '_prb' + prb_title
@@ -84,9 +85,15 @@ def run_CatGT(args):
     catgt_logName = catgt_logName + '_CatGT.log'
     
     
-    catgt_runDir = os.path.join(args['directories']['extracted_data_directory'],catgt_runName)
+    read_catgt_runDir =  os.path.join(args['directories']['extracted_data_directory'],read_catgt_runName)
+    write_catgt_runDir = os.path.join(args['directories']['extracted_data_directory'],write_catgt_runName)
+
+    # Rename CatGT run directory to reflect gate indices concatenated
+    mv_cmd = 'mv ' + read_catgt_runDir + ' ' + write_catgt_runDir
+    subprocess.call(mv_cmd,shell=True)
+    # Copy the log file to the new run Dir
     shutil.copyfile(os.path.join(logPath,logName), \
-                    os.path.join(catgt_runDir,catgt_logName))
+                    os.path.join(write_catgt_runDir,catgt_logName))
     
 
     print('total time: ' + str(np.around(execution_time,2)) + ' seconds')

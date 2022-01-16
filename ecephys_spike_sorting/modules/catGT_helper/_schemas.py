@@ -6,7 +6,8 @@ from ...common.schemas import EphysParams, Directories
 
 class CatGTParams(DefaultSchema):
     run_name = String(required=True, help='undecorated run name (no g or t indices')
-    gate_string = String(required=True, default='0', help='gate string')
+    gate_string = String(required=True, default='0', help='gate string specifying gate range')
+    gate_list_string = String(required=True, default='0', help='string listing each gate to concatenate')
     trigger_string = String(required=True, default='0,0', help='string specifying trials to concatenate, e.g. 0,200')
     probe_string = String(required=True, default='0', help='string specifying probes, e.g. 0:3')
     stream_string = String(required=True, default='-ap', help='string specifying which streams to process')

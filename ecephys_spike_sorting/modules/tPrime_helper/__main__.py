@@ -32,7 +32,7 @@ def call_TPrime(args):
     
     # build paths to the input data for TPrime
     catGT_dest = args['directories']['extracted_data_directory']
-    run_name = args['catGT_helper_params']['run_name'] + '_g' + args['catGT_helper_params']['gate_string']
+    run_name = args['catGT_helper_params']['run_name'] + '_g' + args['catGT_helper_params']['gate_list_string']
     run_dir_name = 'catgt_' + run_name
     prb_dir_prefix = run_name + '_imec'
     
