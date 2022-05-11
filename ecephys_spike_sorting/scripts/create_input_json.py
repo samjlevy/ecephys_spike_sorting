@@ -25,16 +25,17 @@ def createInputJson(output_file,
                     extracted_data_directory=None,
                     kilosort_output_directory=None,
                     ks_make_copy=False,
-                    probe_type='3A',
+                    probe_type='NP1',
                     catGT_run_name='test',
                     gate_string='0',
+                    gate_list_string='0',
                     trigger_string='0,0',
                     probe_string='0',
                     catGT_stream_string = '-ap',
                     catGT_car_mode = 'gbldmx',
                     catGT_loccar_min_um = 40,
                     catGT_loccar_max_um = 160,
-                    catGT_cmd_string = '-prb_fld -out_prb_fld',
+                    catGT_cmd_string = '-prb_fld -out_prb_fld', #-aphipass=300-gfix=0.40,0.10,0.02
                     noise_template_use_rf = True,
                     event_ex_param_str = 'XD=4,1,50',
                     tPrime_im_ex_list = 'SY=0,384,6,500',
@@ -58,30 +59,33 @@ def createInputJson(output_file,
                     ks_templateRadius_um = 163,
                     c_Waves_snr_um = 160,
                     qm_isi_thresh = 1.5/1000,
-                    include_pcs = True
+                    include_pcs = True,
+                    ks_AUCsplit = 0.9,
+                    ks_spkTh = -6
+                    #supercat_string = 'None',
                     ):
 
     # hard coded paths to code on your computer and system
-    ecephys_directory = r'D:\ecephys_fork\ecephys_spike_sorting\ecephys_spike_sorting'
+    ecephys_directory = r'C:\Users\Niflheim\Documents\GitHub\External\ecephys_spike_sorting'
     
-    # location of kilosor respository and kilosort version
+    # location of kilosort respository and kilosort version
 
-    kilosort_repository = r'C:\Users\labadmin\Documents\jic\KS3_fork\Kilosort2'
+    kilosort_repository = r'C:\Users\Niflheim\Documents\GitHub\External\Kilosort'
 
-    KS2ver = '2.0'      # must equal '3.0', '2.5' or '2.0', and match the kiilosort_repository
+    KS2ver = '3.0'      # must equal '3.0', '2.5' or '2.0', and match the kiilosort_repository
     
     # KS 3.0 does not yet output pcs.
     if KS2ver == '3.0':
         include_pcs = False  # set to false for KS2ver = '3.0'
     
-    npy_matlab_repository = r'C:\Users\labadmin\Documents\jic\npy-matlab-master'
-    catGTPath = r'C:\Users\labadmin\Documents\jic\CatGT-win'
-    tPrime_path=r'C:\Users\labadmin\Documents\jic\TPrime-win'
-    cWaves_path=r'C:\Users\labadmin\Documents\jic\C_Waves-win'
+    npy_matlab_repository = r'C:\Users\Niflheim\Documents\GitHub\External\npy-matlab'
+    catGTPath = r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\CatGT-win'
+    tPrime_path=r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\TPrime-win'
+    cWaves_path=r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\C_Waves-win'
     
      
     # for config files and kilosort working space
-    kilosort_output_tmp = r'D:\kilosort_datatemp' 
+    kilosort_output_tmp = r'D:\Kilosort_scratch' 
     
     
     # derived directory names
@@ -158,7 +162,7 @@ def createInputJson(output_file,
     ks_nNeighbors = int(round(2*nrows*nColumn.get(probe_type)))
     if ks_nNeighbors > maxNeighbors:
         ks_nNeighbors = maxNeighbors          
-    print('ks_nNeighbors: ' + repr(ks_nNeighbors))
+    #print('ks_nNeighbors: ' + repr(ks_nNeighbors))
     
     c_waves_radius_sites = int(round(c_Waves_snr_um/vpitch.get(probe_type)))
 
@@ -206,12 +210,12 @@ def createInputJson(output_file,
             "cluster_group_file_name" : 'cluster_group.tsv'
         }, 
 
-        "extract_from_npx_params" : {
-            "npx_directory": npx_directory,
-            "settings_xml": npx_directory,
-            "npx_extractor_executable": r"C:\Users\svc_neuropix\Documents\GitHub\npxextractor\Release\NpxExtractor.exe",
-            "npx_extractor_repo": r"C:\Users\svc_neuropix\Documents\GitHub\npxextractor"
-        },
+        # "extract_from_npx_params" : {
+        #     "npx_directory": npx_directory,
+        #     "settings_xml": npx_directory,
+        #     "npx_extractor_executable": r"C:\Users\svc_neuropix\Documents\GitHub\npxextractor\Release\NpxExtractor.exe",
+        #     "npx_extractor_repo": r"C:\Users\svc_neuropix\Documents\GitHub\npxextractor"
+        # },
  
         "depth_estimation_params" : {
             "hi_noise_thresh" : 50.0,
@@ -231,10 +235,10 @@ def createInputJson(output_file,
             "start_time" : 10
         }, 
 
-        "median_subtraction_params" : {
-            "median_subtraction_executable": "C:\\Users\\svc_neuropix\\Documents\\GitHub\\spikebandmediansubtraction\\Builds\\VisualStudio2013\\Release\\SpikeBandMedianSubtraction.exe",
-            "median_subtraction_repo": "C:\\Users\\svc_neuropix\\Documents\\GitHub\\spikebandmediansubtraction\\",
-        },
+        # "median_subtraction_params" : {
+        #     "median_subtraction_executable": "C:\\Users\\svc_neuropix\\Documents\\GitHub\\spikebandmediansubtraction\\Builds\\VisualStudio2013\\Release\\SpikeBandMedianSubtraction.exe",
+        #     "median_subtraction_repo": "C:\\Users\\svc_neuropix\\Documents\\GitHub\\spikebandmediansubtraction\\",
+        # },
 
         "kilosort_helper_params" : {
 
@@ -255,13 +259,13 @@ def createInputJson(output_file,
                 "saveRez" : ks_saveRez,
                 "copy_fproc" : ks_copy_fproc,
                 "fproc" : fproc_str,
-                "chanMap" : "'chanMap.mat'",
+                "chanMap" : "'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'",
                 "fshigh" : 150,
                 "minfr_goodchannels" : ks_minfr_goodchannels,
                 "Th" : ks_Th,
                 "lam" : 10,
-                "AUCsplit" : 0.9,
-                "minFR" : 1/50.,
+                "AUCsplit" : ks_AUCsplit, #0.9,
+                "minFR" : 0.01,#1/50.,
                 "momentum" : '[20 400]',
                 "sigmaMask" : 30,
                 "ThPre" : 8,
@@ -270,7 +274,8 @@ def createInputJson(output_file,
                 "LTseed" : ks_LTseed,
                 "whiteningRange" : ks_whiteningRange,
                 "nNeighbors" : ks_nNeighbors,
-                "CAR" : 0
+                "CAR" : 0,
+                "spkTh" : ks_spkTh
             }
         },
 
