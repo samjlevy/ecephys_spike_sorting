@@ -1,8 +1,6 @@
 import os
 import sys
 import subprocess
-#import shutil
-import numpy as np
 import glob
 
 from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
@@ -217,6 +215,10 @@ for spec in run_specs:
     # to determine the range of trials if the user specified t limits as
     # start and end
     first_gate = spec[1][0]
+    catGT_internal_dest = os.path.join(catGT_dest,f'catgt_{rec_file_stem}_g{first_gate}')
+    if not os.path.exists(catGT_internal_dest):
+        os.mkdir(catGT_internal_dest)
+    
     run_folder_name = spec[0] + '_g' + first_gate
     prb0_fld_name = run_folder_name + '_imec' + prb_list[0]
     prb0_fld = os.path.join(npx_directory, run_folder_name, prb0_fld_name)
@@ -227,11 +229,7 @@ for spec in run_specs:
     # get list of g-indices to concatenate from data directory
     g_range = '[' + spec[1][0] + '-' + spec[1][-1] + ']'
     g_tocat = sorted(glob.glob(os.path.join(npx_directory,(rec_file_stem + '_g' + g_range))))
-    glist = ''.join((x[-1]+'-') for x in g_tocat)[:-1] # g inds separated by dashes, minus the last dash
-    for g in g_tocat:
-        catGT_internal_dest = os.path.join(catGT_dest,f'catgt_{rec_file_stem}_g{g[-1]}')
-        if not os.path.exists(catGT_internal_dest):
-            os.mkdir(catGT_internal_dest)
+    glist = ''.join((x[-1]+'-') for x in g_tocat)[:-1] # g inds separated by dashes, minus the last dash        
 
     print('Concatenating g indices ' + glist)
     
@@ -271,7 +269,7 @@ for spec in run_specs:
             catGT_stream_string = catGT_stream_string + ' -lf'
         
         # build name of first trial to be concatenated/processed;
-        # allows reaidng of the metadata
+        # allows reading of the metadata
         run_str = spec[0] + '_g' + first_gate
         run_folder = run_str
         prb_folder = run_str + '_imec' + prb
@@ -301,22 +299,11 @@ for spec in run_specs:
                                        )      
         
         # from MS fork
+        run_catGT=False #TODO: remove this
         if run_CatGT:
             command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
             	          + " --output_json " + catGT_output_json[i]
             subprocess.check_call(command.split(' '))           
-
-            # parse the CatGT log and write results to command line
-            print(f"probe_list {prb_list}")
-            logPath = os.getcwd()
-            gfix_edits = SpikeGLX_utils.ParseCatGTLog( logPath, spec[0], spec[1], prb_list )
-        
-            for i in range(0,len(prb_list)):
-                edit_string = '{:.3f}'.format(gfix_edits[i])
-                print('Probe ' + prb_list[i] + '; gfix edits/sec: ' + repr(gfix_edits[i]))
-        else:
-            # fill in dummy gfix_edits for running without preprocessing
-            gfix_edits = np.zeros(len(prb_list), dtype='float64' )
         
         #create json files for the other modules
         session_id.append(spec[0] + '_imec' + prb)
@@ -325,7 +312,7 @@ for spec in run_specs:
         
         
         # location of the binary created by CatGT, using -out_prb_fld
-        run_str = spec[0] + '_g' + glist
+        run_str = spec[0] + '_g' + first_gate#glist
         run_folder = 'catgt_' + run_str
         prb_folder = run_str + '_imec' + prb
         catgt_output_dir = os.path.join(catGT_dest, run_folder)
@@ -334,33 +321,6 @@ for spec in run_specs:
         continuous_file = os.path.join(data_directory[i], fileName)
  
         outputName = 'imec' + prb + '_ks3'
-        
-        # from MS fork
-        # recursively rename files in the catgt output dir to match the gate list,
-        #      if more than 1 gate was concatenated
-        # first get files in the renamed directory matching the first g index
-        if len(glist)>len(first_gate):
-            f_to_rename = glob.glob((catgt_output_dir + '/**/*_g' + first_gate + '_*'),recursive=True)
-            print('renaming catgt output...')
-            print(f_to_rename)
-            print('error on purpose'+f_to_rename)
-            for f in f_to_rename:         
-                splt_f = f.rsplit(('_g' + first_gate), 1)
-                new_f = ('_g' + glist).join(splt_f)
-                #new_f = f.replace(('_g' + first_gate),('_g' + glist))
-                print(f+" "+new_f)
-                if os.path.isdir(f):
-                    mv_cmd = "mv " + f + " " + new_f
-                    subprocess.call(mv_cmd,shell=True)
-                    subf_to_rename =  glob.glob((new_f + '/**/*_g' + first_gate + '_*'),recursive=True)
-                    for sf in subf_to_rename:
-                        splt_f = sf.rsplit(('_g' + first_gate), 1)
-                        new_f = ('_g' + glist).join(splt_f)
-                        os.rename(sf,new_f)
-                else:
-                    if os.path.isfile(f):
-                        os.rename(f,new_f)
-            print(f"renamed {len(f_to_rename)} files or directories in catgt output dir.")
 
         # kilosort_postprocessing and noise_templates modules alter the files
         # that are input to phy. If using these modules, keep a copy of the
@@ -371,9 +331,6 @@ for spec in run_specs:
             ks_make_copy = False
 
         kilosort_output_dir = os.path.join(data_directory[i], outputName)
-
-        #print(data_directory[i])
-        #print(continuous_file)
         
         # get region specific parameters
         ks_Th = ksTh_dict.get(spec[4][i])

@@ -66,7 +66,7 @@ def createInputJson(output_file,
                     ):
 
     # hard coded paths to code on your computer and system
-    ecephys_directory = r'C:\Users\Niflheim\Documents\GitHub\External\ecephys_spike_sorting'
+    ecephys_directory = r'C:\Users\Niflheim\Documents\GitHub\External\ecephys_spike_sorting\ecephys_spike_sorting'
     
     # location of kilosort respository and kilosort version
 
