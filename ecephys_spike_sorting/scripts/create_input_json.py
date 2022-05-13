@@ -103,7 +103,6 @@ def createInputJson(output_file,
     num_channels = 385    
     reference_channels = [191]
     uVPerBit = 2.34375
-    probe_type = 'NP1100'
     acq_system = 'PXI'
      
     
