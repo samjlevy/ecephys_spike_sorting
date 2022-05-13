@@ -24,11 +24,12 @@ from ecephys_spike_sorting.scripts.create_input_json import createInputJson
 
 animal = 'TopCoat'
 rec_file_stem = '20210920_TopCoat_LT01'
-npx_directory = os.path.join('D:',animal)
+npx_directory = os.path.join('D:/',animal)
 # Set to an existing directory; all output will be written here.
 # Output will be in the standard SpikeGLX directory structure:
 # run_folder/probe_folder/*.bin
 catGT_dest = os.path.join('D:/Sorted',animal, rec_file_stem)
+
 if not os.path.exists(catGT_dest):
     os.mkdir(catGT_dest)
 
@@ -61,7 +62,9 @@ logName = f'{rec_file_stem}_log.csv'
 # run_specs = name, gate, trigger and probes to process
 # Each run_spec is a list of 4 strings:
 #   undecorated run name (no g/t specifier, the run field in CatGT)
-#   gate index, as a string (e.g. '0')
+#   gate index range, as a string (e.g. '0,9'); can be greater than actual range
+#       later code will look for all g indices in this range with the same filename stem
+#       EAJ edit: can't currently handle gate indices with >1 digit or multiple triggers
 #   triggers to process/concatenate, as a string e.g. '0,400', '0,0 for a single file
 #           can replace first limit with 'start', last with 'end'; 'start,end'
 #           will concatenate all trials in the probe folder
@@ -70,7 +73,7 @@ logName = f'{rec_file_stem}_log.csv'
 #           these strings must match a key in the param dictionaries above.
 
 run_specs = [									
-						[rec_file_stem, '0,100', '0,0', '0', ['cortex'] ]
+						[rec_file_stem, '0,9', '0,0', '0', ['cortex'] ]
 ]
 
 # ------------
@@ -80,7 +83,7 @@ run_CatGT = True   # set to False to sort/process previously processed data.
 
 
 # CAR mode for CatGT. Must be equal to 'None', 'gbldmx', 'gblcar' or 'loccar'
-car_mode = 'gbldmx'
+car_mode = 'gblcar'
 # inner and outer radii, in um for local comman average reference, if used
 loccar_min = 40
 loccar_max = 160
@@ -111,12 +114,12 @@ ni_present = True
 # -- Each XD word contains up to 16 bits (0:15)
 # -- Yggdrasil inputs: --
 # XA=0,1,3,500 -- sync channel on nidaq: word 0, thresh 1 V, must stay above 3V, dur 500 ms
-# XA=1,1,3,0 -- camera: word 1, thresh 1V, must stay above 3V, dur ??? ms
-# XA=2,1,3,0 -- Arduino: word 2, thresh 1V, must stay above 3V, dur ??? ms
+# XA=1,1,3,0 -- Arduino: word 1, thresh 1V, must stay above 3V, dur ??? ms
+# XA=2,1,3,0 -- camera: word 2, thresh 1V, must stay above 3V, dur ??? ms
 # - duration must be within +/-20% of the actual pulse width; 0 ignores pulse width requirement
 
 
-ni_extract_string = '-XA=0,1,3,500 XA=1,1,3,0 XA=2,1,3,0'
+ni_extract_string = '-XA=0,1,3,500 -XA=1,1,3,0 -XA=2,1,3,0'
 
 
 # ----------------------
@@ -213,18 +216,22 @@ for spec in run_specs:
     # build path to the first probe folder; look into that folder
     # to determine the range of trials if the user specified t limits as
     # start and end
-    run_folder_name = spec[0] + '_g' + spec[1]
+    first_gate = spec[1][0]
+    run_folder_name = spec[0] + '_g' + first_gate
     prb0_fld_name = run_folder_name + '_imec' + prb_list[0]
     prb0_fld = os.path.join(npx_directory, run_folder_name, prb0_fld_name)
-    first_trig, last_trig = SpikeGLX_utils.ParseTrigStr(spec[2], prb_list[0], spec[1], prb0_fld)
+    first_trig, last_trig = SpikeGLX_utils.ParseTrigStr(spec[2], prb_list[0], first_gate, prb0_fld)
     trigger_str = repr(first_trig) + ',' + repr(last_trig)
     
     # from MS fork
     # get list of g-indices to concatenate from data directory
-    first_gate = spec[1][0]
     g_range = '[' + spec[1][0] + '-' + spec[1][-1] + ']'
     g_tocat = sorted(glob.glob(os.path.join(npx_directory,(rec_file_stem + '_g' + g_range))))
     glist = ''.join((x[-1]+'-') for x in g_tocat)[:-1] # g inds separated by dashes, minus the last dash
+    for g in g_tocat:
+        catGT_internal_dest = os.path.join(catGT_dest,f'catgt_{rec_file_stem}_g{g[-1]}')
+        if not os.path.exists(catGT_internal_dest):
+            os.mkdir(catGT_internal_dest)
 
     print('Concatenating g indices ' + glist)
     
@@ -335,10 +342,13 @@ for spec in run_specs:
         if len(glist)>len(first_gate):
             f_to_rename = glob.glob((catgt_output_dir + '/**/*_g' + first_gate + '_*'),recursive=True)
             print('renaming catgt output...')
+            print(f_to_rename)
+            print('error on purpose'+f_to_rename)
             for f in f_to_rename:         
                 splt_f = f.rsplit(('_g' + first_gate), 1)
                 new_f = ('_g' + glist).join(splt_f)
                 #new_f = f.replace(('_g' + first_gate),('_g' + glist))
+                print(f+" "+new_f)
                 if os.path.isdir(f):
                     mv_cmd = "mv " + f + " " + new_f
                     subprocess.call(mv_cmd,shell=True)
@@ -350,7 +360,7 @@ for spec in run_specs:
                 else:
                     if os.path.isfile(f):
                         os.rename(f,new_f)
-            print(f"renamed {len(f_to_rename)} files or directries in catgt output dir.")
+            print(f"renamed {len(f_to_rename)} files or directories in catgt output dir.")
 
         # kilosort_postprocessing and noise_templates modules alter the files
         # that are input to phy. If using these modules, keep a copy of the
