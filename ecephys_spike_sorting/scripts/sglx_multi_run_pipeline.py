@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import glob
+import pandas as pd
 
 from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
 from ecephys_spike_sorting.scripts.helpers import log_from_json
@@ -299,11 +300,11 @@ for spec in run_specs:
                                        )      
         
         # from MS fork
-        run_catGT=False #TODO: remove this
-        if run_CatGT:
-            command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
-            	          + " --output_json " + catGT_output_json[i]
-            subprocess.check_call(command.split(' '))           
+# TODO: undo this comment block
+        #if run_CatGT:
+        #    command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
+        #    	          + " --output_json " + catGT_output_json[i]
+        #    subprocess.check_call(command.split(' '))           
         
         #create json files for the other modules
         session_id.append(spec[0] + '_imec' + prb)
@@ -320,7 +321,7 @@ for spec in run_specs:
         fileName = run_str + '_tcat.imec' + prb + '.ap.bin'
         continuous_file = os.path.join(data_directory[i], fileName)
  
-        outputName = 'imec' + prb + '_ks3'
+        outputName = 'imec' + prb + '_ks'
 
         # kilosort_postprocessing and noise_templates modules alter the files
         # that are input to phy. If using these modules, keep a copy of the
@@ -365,29 +366,16 @@ for spec in run_specs:
                                        qm_isi_thresh = refPerMS/1000
                                        )   
 
+# TODO: undo this comment block
         # Run each module --- KS is run here ---
-        for module in modules:
-            module_output_json = os.path.join(json_directory, session_id[i] + '-' + module + '-output.json')  
-            command = "python -W ignore -m ecephys_spike_sorting.modules." + module + " --input_json " + module_input_json[i] \
-		          + " --output_json " + module_output_json
-            subprocess.check_call(command.split(' '))
+        #for module in modules:
+        #    module_output_json = os.path.join(json_directory, session_id[i] + '-' + module + '-output.json')  
+        #    command = "python -W ignore -m ecephys_spike_sorting.modules." + module + " --input_json " + module_input_json[i] \
+		#          + " --output_json " + module_output_json
+        #    subprocess.check_call(command.split(' '))
         
         # copy json file to data directory as record of the input parameters 
-        log_from_json.addEntry(modules, json_directory, session_id[i], logFullPath)
-       
-        
-    # # loop over probes for processing.    
-    # for i, prb in enumerate(prb_list):  
-        
-    #     run_one_probe.runOne( session_id[i],
-    #              json_directory,
-    #              data_directory[i],
-    #              run_CatGT,
-    #              catGT_input_json[i],
-    #              catGT_output_json[i],
-    #              modules,
-    #              module_input_json[i],
-    #              logFullPath )
+        #log_from_json.addEntry(modules, json_directory, session_id[i], logFullPath)
                  
         
     if run_TPrime:
@@ -396,7 +384,7 @@ for spec in run_specs:
         # from each probe -- all aligned to a reference stream.
     
         # create json files for calling TPrime
-        session_id = spec[0] + '_TPrime'
+        session_id = spec[0]
         input_json = os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_TPrime' + '-input.json') 
         output_json = os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_TPrime' + '-input.json')
         
@@ -405,9 +393,7 @@ for spec in run_specs:
         for i, prb in enumerate(prb_list):
             sync_extract = '-SY=' + prb +',-1,6,500'
             im_ex_list = im_ex_list + ' ' + sync_extract
-            
-        print('im_ex_list: ' + im_ex_list)     
-        
+                       
         info = createInputJson(input_json, npx_directory=npx_directory, 
     	                                   continuous_file = continuous_file,
                                            spikeGLX_data = True,

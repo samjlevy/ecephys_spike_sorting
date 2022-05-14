@@ -114,7 +114,7 @@ def call_TPrime(args):
         toStream_path = os.path.join(run_directory, prb_dir, toStream_name)
         
         # convert events in the toStream to sec; they will not be adjusted
-        ks_outdir = 'imec' + str(toStream_prb) + '_ks2'
+        ks_outdir = 'imec' + str(toStream_prb) + '_ks'
         st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
         # convert to seconds; if bNPY = True, returned file is an npy file
         # otherwise, text.
@@ -151,7 +151,7 @@ def call_TPrime(args):
             from_list.append(os.path.join(run_directory, prb_dir, c_name))
             c_index = len(from_stream_index)
             # build path to spike times npy file
-            ks_outdir = 'imec' + str(c_prb) + '_ks2'
+            ks_outdir = 'imec' + str(c_prb) + '_ks'
             st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
             st_file_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
             events_list.append(st_file_sec)
@@ -241,7 +241,7 @@ def call_TPrime(args):
             from_list.append(os.path.join(run_directory, prb_dir, c_name))
             c_index = len(from_stream_index)
             # build path to spike times npy file
-            ks_outdir = 'imec' + str(c_prb) + '_ks2'
+            ks_outdir = 'imec' + str(c_prb) + '_ks'
             st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
             st_file_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
             events_list.append(st_file_sec)
@@ -350,9 +350,9 @@ def call_TPrime_3A(args):
     out_list = list()    # list of paths for output files, one per event file
 
     # convert events in the toStream to sec; they will not be adjusted
-    # search the directory the edges file to get the ks2 output
-    # get name of ks2 output dir and convert to sec
-    ks_outdir = fnmatch.filter(file_list, 'imec_*_ks2')[0]
+    # search the directory the edges file to get the ks output
+    # get name of ks output dir and convert to sec
+    ks_outdir = fnmatch.filter(file_list, 'imec_*_ks')[0]
     st_file = os.path.join(toStream_parent, ks_outdir, 'spike_times.npy')
     toStream_events_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
     # for later data analysis with spike times as sec, also save as npy
@@ -372,7 +372,7 @@ def call_TPrime_3A(args):
             return              
         fS_name = flt_list[0]
         fS_file_list.append(os.path.join(fS_parent,fS_name))
-        ks_outdir = fnmatch.filter(file_list, 'imec_*_ks2')[0]
+        ks_outdir = fnmatch.filter(file_list, 'imec_*_ks')[0]
         st_file = os.path.join(fS_parent, ks_outdir, 'spike_times.npy')
         st_file_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
         events_list.append(st_file_sec)
