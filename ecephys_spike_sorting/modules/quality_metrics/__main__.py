@@ -8,7 +8,7 @@ import pathlib
 import numpy as np
 import pandas as pd
 
-from ...common.utils import load_kilosort_data
+from ...common.utils import load_kilosort_data, write_cluster_group_tsv, read_cluster_group_tsv
 from ...common.utils import getFileVersion
 from ...common.epoch import get_epochs_from_nwb_file
 
@@ -79,9 +79,29 @@ def calculate_quality_metrics(args):
     print("Saving data...")
    
     metrics.to_csv(output_file, index=False )
-
+    
+    # EAJ addition 16 May 2022
+    print("Labeling high isi_viol and contam_rate clusters as MUA...")
+    # read current cluster assignments
+    ci_tmp, cluster_group = read_cluster_group_tsv(os.path.join(args['directories']['kilosort_output_directory'], \
+                'cluster_KSLabel.tsv'))
+    
+    # filter for MUA-like metrics
+    is_mua = ((metrics['isi_viol']>0.2) | (metrics['contam_rate']>15))
+    
+    # change the labels accordingly
+    labels = [ ]
+    for i, ci in enumerate(ci_tmp):
+    	if cluster_group[i]=='good' and is_mua[clusterIDs==ci]:
+    		labels.append('mua')
+    	else:
+    		labels.append(cluster_group[i])
+    write_cluster_group_tsv(ci_tmp, 
+    						labels, 
+    						args['directories']['kilosort_output_directory'], 
+    						args['ephys_params']['cluster_group_file_name'])
+    
     execution_time = time.time() - start
-
     print('total time: ' + str(np.around(execution_time,2)) + ' seconds')
     print()
     

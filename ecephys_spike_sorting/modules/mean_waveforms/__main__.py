@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
-from ...common.utils import load_kilosort_data
+from ...common.utils import load_kilosort_data, write_cluster_group_tsv, read_cluster_group_tsv
 from ...common.utils import getSortResults
 from ...common.utils import getFileVersion
 
@@ -150,6 +150,27 @@ def calculate_mean_waveforms(args):
            wm_fullpath = os.path.join(pathlib.Path(wm_fullpath).parent, pathlib.Path(wm_fullpath).stem + '_' + repr(clu_version) + '.csv')
     
         metrics.to_csv(wm_fullpath, index=False)
+        
+        # EAJ addition 16 May 2022
+        print("Labeling high isi_viol and contam_rate clusters as MUA...")
+        # read current cluster assignments
+        ci_tmp, cluster_group = read_cluster_group_tsv(os.path.join(args['directories']['kilosort_output_directory'], \
+                    'cluster_KSLabel.tsv'))
+        
+        # filter for noise-like metrics
+        is_noise = ((metrics['snr']<1.5) | (metrics['halfwidth']>0.35))
+        
+        # change the labels accordingly
+        labels = [ ]
+        for i, ci in enumerate(ci_tmp):
+        	if is_noise[clusterIDs==ci]:
+        		labels.append('noise')
+        	else:
+        		labels.append(cluster_group[i])
+        write_cluster_group_tsv(ci_tmp, 
+        						labels, 
+        						args['directories']['kilosort_output_directory'], 
+        						args['ephys_params']['cluster_group_file_name'])
             
         
     else:

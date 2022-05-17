@@ -21,8 +21,8 @@ from ecephys_spike_sorting.scripts.create_input_json import createInputJson
 # -------------------------------
 # -------------------------------
 
-animal = 'TopCoat'
-rec_file_stem = '20210920_TopCoat_LT01'
+animal = 'StickPin'
+rec_file_stem = '20211022_StickPin_DY01'
 npx_directory = os.path.join('D:/',animal)
 # Set to an existing directory; all output will be written here.
 # Output will be in the standard SpikeGLX directory structure:
@@ -166,7 +166,8 @@ modules = [
             'noise_templates',    
             #'psth_events',
             'mean_waveforms',
-            'quality_metrics'
+            'quality_metrics',
+            'depth_estimation'
 			]
 
 json_directory = catGT_dest
@@ -300,11 +301,10 @@ for spec in run_specs:
                                        )      
         
         # from MS fork
-# TODO: undo this comment block
-        #if run_CatGT:
-        #    command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
-        #    	          + " --output_json " + catGT_output_json[i]
-        #    subprocess.check_call(command.split(' '))           
+        if run_CatGT:
+            command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
+            	          + " --output_json " + catGT_output_json[i]
+            subprocess.check_call(command.split(' '))           
         
         #create json files for the other modules
         session_id.append(spec[0] + '_imec' + prb)
@@ -366,16 +366,15 @@ for spec in run_specs:
                                        qm_isi_thresh = refPerMS/1000
                                        )   
 
-# TODO: undo this comment block
         # Run each module --- KS is run here ---
-        #for module in modules:
-        #    module_output_json = os.path.join(json_directory, session_id[i] + '-' + module + '-output.json')  
-        #    command = "python -W ignore -m ecephys_spike_sorting.modules." + module + " --input_json " + module_input_json[i] \
-		#          + " --output_json " + module_output_json
-        #    subprocess.check_call(command.split(' '))
+        for module in modules:
+            module_output_json = os.path.join(json_directory, session_id[i] + '-' + module + '-output.json')  
+            command = "python -W ignore -m ecephys_spike_sorting.modules." + module + " --input_json " + module_input_json[i] \
+		          + " --output_json " + module_output_json
+            subprocess.check_call(command.split(' '))
         
-        # copy json file to data directory as record of the input parameters 
-        #log_from_json.addEntry(modules, json_directory, session_id[i], logFullPath)
+        #copy json file to data directory as record of the input parameters 
+        log_from_json.addEntry(modules, json_directory, session_id[i], logFullPath)
                  
         
     if run_TPrime:
