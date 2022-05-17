@@ -2,7 +2,6 @@ import os
 import sys
 import subprocess
 import glob
-import pandas as pd
 
 from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
 from ecephys_spike_sorting.scripts.helpers import log_from_json
@@ -24,7 +23,7 @@ from ecephys_spike_sorting.scripts.create_input_json import createInputJson
 animal = 'StickPin'
 rec_file_stem = '20211022_StickPin_DY01'
 npx_directory = os.path.join('D:/',animal)
-# Set to an existing directory; all output will be written here.
+# all output will be written here.
 # Output will be in the standard SpikeGLX directory structure:
 # run_folder/probe_folder/*.bin
 catGT_dest = os.path.join('D:/Sorted',animal, rec_file_stem)
@@ -81,7 +80,7 @@ run_specs = [
 run_CatGT = True   # set to False to sort/process previously processed data.
 
 
-# CAR mode for CatGT. Must be equal to 'None', 'gbldmx', 'gblcar' or 'loccar'
+# CAR mode for CatGT. Must be equal to 'None', 'gblcar' or 'loccar'
 car_mode = 'gblcar'
 # inner and outer radii, in um for local comman average reference, if used
 loccar_min = 40
@@ -89,7 +88,7 @@ loccar_max = 160
 
 # flag to process lf. The depth estimation module assumes lf has been processed.
 # if selected, must also include a range for filtering in the catGT_cmd_string
-process_lf = True
+process_lf = False
 
 
 # CatGT commands for bandpass filtering, artifact correction, and zero filling
@@ -103,7 +102,7 @@ process_lf = True
 # -t_miss_ok option required to concatenate over missing g or t indices
 # -zerofillmax=500 option required to fill gaps only up to 500ms of zeros,
 # so kilsort doesn't crash
-catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -apfilter=butter,12,300,10000 -lffilter=butter,12,1,500 -gfix=0.4,0.10,0.02 '
+catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 -apfilter=butter,12,300,10000 '#' -lffilter=butter,12,1,500 '
 
 ni_present = True
 
@@ -167,7 +166,7 @@ modules = [
             #'psth_events',
             'mean_waveforms',
             'quality_metrics',
-            'depth_estimation'
+            #'depth_estimation'
 			]
 
 json_directory = catGT_dest
