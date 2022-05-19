@@ -20,8 +20,8 @@ from ecephys_spike_sorting.scripts.create_input_json import createInputJson
 # -------------------------------
 # -------------------------------
 
-animal = 'StickPin'
-rec_file_stem = '20211022_StickPin_DY01'
+animal = 'AppleBottom'
+rec_file_stem = '20220309_AppleBottom_DY01'
 npx_directory = os.path.join('D:/',animal)
 # all output will be written here.
 # Output will be in the standard SpikeGLX directory structure:
@@ -82,13 +82,10 @@ run_CatGT = True   # set to False to sort/process previously processed data.
 
 # CAR mode for CatGT. Must be equal to 'None', 'gblcar' or 'loccar'
 car_mode = 'gblcar'
+lfp_car_mode = 'None'
 # inner and outer radii, in um for local comman average reference, if used
 loccar_min = 40
 loccar_max = 160
-
-# flag to process lf. The depth estimation module assumes lf has been processed.
-# if selected, must also include a range for filtering in the catGT_cmd_string
-process_lf = False
 
 
 # CatGT commands for bandpass filtering, artifact correction, and zero filling
@@ -102,7 +99,8 @@ process_lf = False
 # -t_miss_ok option required to concatenate over missing g or t indices
 # -zerofillmax=500 option required to fill gaps only up to 500ms of zeros,
 # so kilsort doesn't crash
-catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 -apfilter=butter,12,300,10000 '#' -lffilter=butter,12,1,500 '
+catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 -apfilter=butter,12,300,10000 '
+lfp_catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 -lffilter=butter,12,1,500 '
 
 ni_present = True
 
@@ -163,7 +161,6 @@ modules = [
             'kilosort_helper',
             'kilosort_postprocessing',
             'noise_templates',    
-            #'psth_events',
             'mean_waveforms',
             'quality_metrics',
             #'depth_estimation'
@@ -258,6 +255,7 @@ for spec in run_specs:
         # build extract string for SYNC channel for this probe
         sync_extract = '-SY=' + prb +',-1,6,500'
         
+        # FIRST, PROCESS AP (with CAR)
         # if this is the first probe proceessed, process the ni stream with it
         if i == 0 and ni_present:
             catGT_stream_string = '-ap -ni'
@@ -265,9 +263,6 @@ for spec in run_specs:
         else:
             catGT_stream_string = '-ap'
             extract_string = sync_extract
-            
-        if process_lf:
-            catGT_stream_string = catGT_stream_string + ' -lf'
         
         # build name of first trial to be concatenated/processed;
         # allows reading of the metadata
@@ -282,7 +277,7 @@ for spec in run_specs:
         
         print(input_meta_fullpath)
          
-        info = createInputJson(catGT_input_json[i], npx_directory=npx_directory, 
+        info = createInputJson(catGT_input_json[2*i], npx_directory=npx_directory, 
                                        continuous_file = continuous_file,
                                        kilosort_output_directory=catGT_dest,
                                        spikeGLX_data = True,
@@ -302,8 +297,43 @@ for spec in run_specs:
         # from MS fork
         if run_CatGT:
             command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
-            	          + " --output_json " + catGT_output_json[i]
-            subprocess.check_call(command.split(' '))           
+            	          + " --output_json " + catGT_output_json[2*i]
+            subprocess.check_call(command.split(' '))        
+        
+        # SECOND, PROCESS LFP (without CAR)
+        catGT_input_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT' + '_LFP' + '-input.json'))
+        catGT_output_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT'+ '_LFP'  + '-output.json'))
+        
+        catGT_stream_string = '-lf'
+        extract_string = sync_extract
+        
+        fileName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.lf.bin'
+        continuous_file = os.path.join(input_data_directory, fileName)
+        metaName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.lf.meta'
+        input_meta_fullpath = os.path.join(input_data_directory, metaName)
+        
+        print(input_meta_fullpath)
+         
+        info = createInputJson(catGT_input_json[2*i+1], npx_directory=npx_directory, 
+                                       continuous_file = continuous_file,
+                                       kilosort_output_directory=catGT_dest,
+                                       spikeGLX_data = True,
+                                       input_meta_path = input_meta_fullpath,
+                                       catGT_run_name = spec[0],
+                                       gate_string = spec[1],
+                                       trigger_string = trigger_str,
+                                       probe_string = prb,
+                                       catGT_stream_string = catGT_stream_string,
+                                       catGT_car_mode = lfp_car_mode,
+                                       catGT_cmd_string = lfp_catGT_cmd_string + ' ' + extract_string,
+                                       extracted_data_directory = catGT_dest
+                                       )      
+        
+        # from MS fork
+        #if run_CatGT:
+        #    command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[i] \
+        #    	          + " --output_json " + catGT_output_json[2*i+1]
+        #    subprocess.check_call(command.split(' '))    
         
         #create json files for the other modules
         session_id.append(spec[0] + '_imec' + prb)
@@ -319,16 +349,13 @@ for spec in run_specs:
         data_directory.append(os.path.join(catGT_dest, run_folder, prb_folder))
         fileName = run_str + '_tcat.imec' + prb + '.ap.bin'
         continuous_file = os.path.join(data_directory[i], fileName)
+        metaName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.ap.meta'
+        input_meta_fullpath = os.path.join(input_data_directory, metaName)
  
         outputName = 'imec' + prb + '_ks'
 
-        # kilosort_postprocessing and noise_templates modules alter the files
-        # that are input to phy. If using these modules, keep a copy of the
-        # original phy output
-        if ('kilosort_postprocessing' in modules) or('noise_templates' in modules):
-            ks_make_copy = True
-        else:
-            ks_make_copy = False
+        # all post-processing modules alter KS output for Phy, so store the original
+        ks_make_copy = True
 
         kilosort_output_dir = os.path.join(data_directory[i], outputName)
         
