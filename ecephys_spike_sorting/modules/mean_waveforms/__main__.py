@@ -152,26 +152,31 @@ def calculate_mean_waveforms(args):
         metrics.to_csv(wm_fullpath, index=False)
         
         # EAJ addition 16 May 2022
-        print("Labeling high isi_viol and contam_rate clusters as MUA...")
+        print("Labeling low snr and high halfwidth as noise...")
         # read current cluster assignments
         ci_tmp, cluster_group = read_cluster_group_tsv(os.path.join(args['directories']['kilosort_output_directory'], \
-                    'cluster_KSLabel.tsv'))
+                    'cluster_group.tsv'))
         
-        # filter for noise-like metrics
-        is_noise = ((metrics['snr']<1.5) | (metrics['halfwidth']>0.35))
-        
-        # change the labels accordingly
+        # change the labels that meet noise filters
         labels = [ ]
+        cluster_ids = []
+        noise_clusters = 0
         for i, ci in enumerate(ci_tmp):
-        	if is_noise[clusterIDs==ci]:
-        		labels.append('noise')
-        	else:
-        		labels.append(cluster_group[i])
-        write_cluster_group_tsv(ci_tmp, 
-        						labels, 
-        						args['directories']['kilosort_output_directory'], 
-        						args['ephys_params']['cluster_group_file_name'])
-            
+            if len(metrics['snr'].loc[metrics['cluster_id']==ci])>0:
+                cluster_ids.append(ci)
+                if ((metrics['snr'].loc[metrics['cluster_id']==ci]<1.5).bool() & \
+                    (metrics['snr'].loc[metrics['cluster_id']==ci]>0).bool()) | \
+                        (metrics['halfwidth'].loc[metrics['cluster_id']==ci]>0.3).bool():
+                            labels.append('noise')
+                            noise_clusters+=1
+                else:
+                    labels.append(cluster_group[i])
+        print(f'Found {len(cluster_ids)} clusters with {len(labels)} labels extracted from {len(ci_tmp)} clusters')
+        #write_cluster_group_tsv(cluster_ids, 
+        #						labels, 
+        #						args['directories']['kilosort_output_directory'], 
+        #						args['ephys_params']['cluster_group_file_name'])
+        print(f'Labeled {noise_clusters} clusters as noise')
         
     else:
         
