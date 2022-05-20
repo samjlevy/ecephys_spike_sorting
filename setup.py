@@ -20,6 +20,7 @@ setup(
               'median-subtraction = ecephys_spike_sorting.modules.median_subtraction.__main__:main',
               'noise-templates = ecephys_spike_sorting.modules.noise_templates.__main__:main',
               'quality-metrics = ecephys_spike_sorting.modules.quality_metrics.__main__:main',
+              'prephy-filters = ecephys_spike_sorting.modules.prephy_filters.__main__:main',
         ],
     },
     setup_requires=['pytest-runner'],

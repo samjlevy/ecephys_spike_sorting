@@ -61,7 +61,12 @@ def createInputJson(output_file,
                     qm_isi_thresh = 1.5/1000,
                     include_pcs = True,
                     ks_AUCsplit = 0.9,
-                    ks_spkTh = -6
+                    ks_spkTh = -6,
+                    snr_min = 2,
+                    halfwidth_max = 0.3,
+                    depth = 3200,
+                    isi_viol_max = 0.2,
+                    contam_rate_max = 15,
                     #supercat_string = 'None',
                     ):
 
@@ -349,6 +354,17 @@ def createInputJson(output_file,
                 "toStream_path_3A" : toStream_path_3A,
                 "fromStream_list_3A" : fromStream_list_3A
         },  
+        
+        "prephy_filters_params" : {
+                "snr_min" : snr_min,
+                "halfwidth_max" : halfwidth_max,
+                "mua_fr_min" : 0.01,#1/50.,
+                "depth" : depth,
+                "isi_viol_max" : isi_viol_max,
+                "contam_rate_max" : contam_rate_max,
+                "good_fr_min" : ks_minfr_goodchannels,
+                
+        }, 
                 
         "psth_events": {
                 "event_ex_param_str": event_ex_param_str

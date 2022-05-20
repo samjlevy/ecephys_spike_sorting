@@ -80,33 +80,6 @@ def calculate_quality_metrics(args):
    
     metrics.to_csv(output_file, index=False )
     
-    # EAJ addition 16 May 2022
-    print("Labeling high isi_viol and contam_rate clusters as MUA...")
-    # read current cluster assignments
-    ci_tmp, cluster_group = read_cluster_group_tsv(os.path.join(args['directories']['kilosort_output_directory'], \
-                'cluster_group.tsv'))
-    
-    # change the labels that meet MUA filters
-    labels = [ ]
-    cluster_ids = []
-    mua_clusters = 0
-    for i, ci in enumerate(ci_tmp):
-        if len(metrics['isi_viol'].loc[metrics['cluster_id']==ci])>0:
-            cluster_ids.append(ci)
-            if ((metrics['isi_viol'].loc[metrics['cluster_id']==ci]>0.2).bool() | \
-                    (metrics['contam_rate'].loc[metrics['cluster_id']==ci]>15).bool()) & \
-                    (cluster_group[i]=='good'):
-                labels.append('mua')
-                mua_clusters+=1
-            else:
-                labels.append(cluster_group[i])
-    print(f'Found {len(cluster_ids)} clusters with {len(labels)} labels extracted from {len(ci_tmp)} clusters')
-    #write_cluster_group_tsv(ci_tmp, 
-    #						labels, 
-    #						args['directories']['kilosort_output_directory'], 
-    #						args['ephys_params']['cluster_group_file_name'])
-    print(f'Labeled {mua_clusters} clusters as MUA')
-    
     execution_time = time.time() - start
     print('total time: ' + str(np.around(execution_time,2)) + ' seconds')
     print()
