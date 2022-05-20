@@ -90,7 +90,7 @@ def createInputJson(output_file,
     
      
     # for config files and kilosort working space
-    kilosort_output_tmp = r'Z:\WT Sequences\Kilosort_scratch' 
+    kilosort_output_tmp = r'D:\Kilosort_scratch' 
     
     
     # derived directory names

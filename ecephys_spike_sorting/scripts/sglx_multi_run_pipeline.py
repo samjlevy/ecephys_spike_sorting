@@ -23,15 +23,15 @@ from ecephys_spike_sorting.scripts.create_input_json import createInputJson
 # -------------------------------
 
 # set for each run
-base_dir = 'Z:/WT Sequences/2021_pilot/'
+base_dir = '//oak-smb-giocomo.stanford.edu/groups/giocomo/emijones/WT_Sequences/2021_pilot/'
 prefix = 'all' #eg datetime.today().strftime('%Y%m%d')
 
 # should be the same across all experiments
-rec_file_list = os.path.join(base_dir,'Preprocessed Data/Provenance',prefix+'_sessions.txt')
-raw_data_dir = os.path.join(base_dir,'Raw Data/Neural_Traces')
-processed_data_dir = os.path.join(base_dir,'Preprocessed Data\Spikes')
-log_file = os.path.join(base_dir, 'Preprocessed Data\Provenance',prefix,'ecephys_log.csv')
-log_stream = open(log_file, 'a')
+rec_file_list = os.path.join(base_dir,'Preprocessed_Data/Provenance',prefix+'_sessions.csv')
+raw_data_dir = os.path.join(base_dir,'Raw_Data/Neural_Traces')
+processed_data_dir = os.path.join(base_dir,'Preprocessed_Data\Spikes')
+log_file = os.path.join(base_dir, 'Preprocessed_Data/Provenance',prefix+'_ecephys_log.csv')
+log_stream = open(log_file, 'a+')
 log_stream.write('Index,File,Sort_Error,Sort_Error_Description\n')
 sessions = pd.read_csv(rec_file_list)
 for i, row in sessions.iterrows():
@@ -182,7 +182,8 @@ for i, row in sessions.iterrows():
                         'noise_templates',    
                         'mean_waveforms',
                         'quality_metrics',
-                        #'depth_estimation'
+                        ###'depth_estimation',
+                        'prePhy_filters'
             			]
             
             json_directory = catGT_dest
