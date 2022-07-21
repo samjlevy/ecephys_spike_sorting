@@ -7,7 +7,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from ...common.utils import write_cluster_group_tsv
+from ...common.utils import write_cluster_group_tsv, getFileVersion
 
 
 def filter_by_metrics(args):
@@ -16,8 +16,12 @@ def filter_by_metrics(args):
 
     start = time.time()
 
+    # find the correct metrics file (eg metrics.csv, metrics_1.csv, ...)
+    metrics_file_args = args['cluster_metrics']['cluster_metrics_file']
+    metrics_file, version = getFileVersion(metrics_file_args)
+    metrics_file = f"{metrics_file[:-5]}{version-1}.csv"
+    
     # read the metrics and current cluster assignments
-    metrics_file = args['cluster_metrics']['cluster_metrics_file']
     metrics = pd.read_csv(metrics_file)
     clusters_file = os.path.join(args['directories']['kilosort_output_directory'], \
                 args['ephys_params']['cluster_group_file_name'])
