@@ -52,7 +52,7 @@ ksTh_dict = {'default':'[9,9]', 'cortex':'[9,9]', 'medulla':'[9,9]', 'thalamus':
 # ------------
 # CatGT params
 # ------------
-run_CatGT = False   # set to False to sort/process previously processed data.
+run_CatGT = True   # set to False to sort/process previously processed data.
 
 # CAR mode for CatGT. Must be equal to 'None', 'gblcar' or 'loccar'
 car_mode = 'gblcar'
@@ -130,13 +130,13 @@ niStream_sync_params = 'XA=0,1,3,500'   # copy from ni_extract_string, set to No
 # ---------------
 # List of modules to run per probe; CatGT and TPrime are called once for each run.
 modules = [
-            #'kilosort_helper',
-            #'kilosort_postprocessing',
-            #'noise_templates',    
-            #'mean_waveforms',
-            #'quality_metrics',
-            ####'depth_estimation',
-            #'prePhy_filters'
+            'kilosort_helper',
+            'kilosort_postprocessing',
+            'noise_templates',    
+            'mean_waveforms',
+            'quality_metrics',
+            ###'depth_estimation',
+            'prePhy_filters'
 			]
 
             
