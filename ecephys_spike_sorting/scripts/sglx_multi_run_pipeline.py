@@ -56,7 +56,6 @@ run_CatGT = True   # set to False to sort/process previously processed data.
 
 # CAR mode for CatGT. Must be equal to 'None', 'gblcar' or 'loccar'
 car_mode = 'gblcar'
-lfp_car_mode = 'None'
 # inner and outer radii, in um for local comman average reference, if used
 loccar_min = 40
 loccar_max = 160
@@ -74,7 +73,6 @@ loccar_max = 160
 # -zerofillmax=500 option required to fill gaps only up to 500ms of zeros,
 # so kilsort doesn't crash
 catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 -apfilter=butter,12,300,10000 '
-lfp_catGT_cmd_string = '-t_miss_ok -zerofillmax=500 -prb_fld -out_prb_fld -gfix=0.4,0.10,0.02 ' # -lffilter=butter,12,1,500
 
 ni_present = True
 
@@ -265,16 +263,15 @@ for i, row in sessions.iterrows():
                     input_data_directory = os.path.join(npx_directory, run_folder, prb_folder)
                     
                     # Run CatGT
-                    # FIRST, PROCESS AP (with CAR)
                     catGT_input_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT' + '-input.json'))
                     catGT_output_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT' + '-output.json'))
                     
                     # if this is the first probe proceessed, process the ni stream with it
                     if i == 0 and ni_present:
-                        catGT_stream_string = '-ap -ni'
+                        catGT_stream_string = '-ni -ap -lf'
                         extract_string = sync_extract + ' ' + ni_extract_string
                     else:
-                        catGT_stream_string = '-ap'
+                        catGT_stream_string = '-ap -lf'
                         extract_string = sync_extract
 
                     fileName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.ap.bin'
@@ -284,7 +281,7 @@ for i, row in sessions.iterrows():
                     
                     print(input_meta_fullpath)
                      
-                    info = createInputJson(catGT_input_json[2*i], npx_directory=npx_directory, 
+                    info = createInputJson(catGT_input_json[i], npx_directory=npx_directory, 
                                                     continuous_file = continuous_file,
                                                     kilosort_output_directory=catGT_dest,
                                                     spikeGLX_data = True,
@@ -306,47 +303,11 @@ for i, row in sessions.iterrows():
                         command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[2*i] \
                          	          + " --output_json " + catGT_output_json[2*i]
                         subprocess.check_call(command.split(' '))        
-                    
-                    # SECOND, PROCESS LFP (without CAR)
-                    catGT_input_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT' + '_LFP' + '-input.json'))
-                    catGT_output_json.append(os.path.join(json_directory, spec[0] + '_g' + glist + '_prb' + prb + '_CatGT'+ '_LFP'  + '-output.json'))
-                    
-                    catGT_stream_string = '-lf'
-                    extract_string = sync_extract
-                    
-                    fileName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.lf.bin'
-                    continuous_file = os.path.join(input_data_directory, fileName)
-                    metaName = run_str + '_t' + repr(first_trig) + '.imec' + prb + '.lf.meta'
-                    input_meta_fullpath = os.path.join(input_data_directory, metaName)
-                    
-                    print(input_meta_fullpath)
-                     
-                    info = createInputJson(catGT_input_json[2*i+1], npx_directory=npx_directory, 
-                                                   continuous_file = continuous_file,
-                                                   kilosort_output_directory=catGT_dest,
-                                                   spikeGLX_data = True,
-                                                   input_meta_path = input_meta_fullpath,
-                                                   catGT_run_name = spec[0],
-                                                   gate_string = spec[1],
-                                                   trigger_string = trigger_str,
-                                                   probe_string = prb,
-                                                   catGT_stream_string = catGT_stream_string,
-                                                   catGT_car_mode = lfp_car_mode,
-                                                   catGT_cmd_string = lfp_catGT_cmd_string + ' ' + extract_string,
-                                                   extracted_data_directory = catGT_dest
-                                                   )      
-                    
-                    # from MS fork
-                    if run_CatGT:
-                        command = "python -W ignore -m ecephys_spike_sorting.modules." + 'catGT_helper' + " --input_json " + catGT_input_json[2*i+1] \
-                       	          + " --output_json " + catGT_output_json[2*i+1]
-                        subprocess.check_call(command.split(' '))    
+ 
                     
                     #create json files for the other modules
                     session_id.append(spec[0] + '_imec' + prb)
-                    
                     module_input_json.append(os.path.join(json_directory, session_id[i] + '-input.json'))
-                    
                     
                     # location of the binary created by CatGT, using -out_prb_fld
                     run_str = spec[0] + '_g' + first_gate#glist
