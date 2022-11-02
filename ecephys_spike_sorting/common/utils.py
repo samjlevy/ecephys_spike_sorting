@@ -613,25 +613,25 @@ def getSortResults(output_dir, clu_version):
 
 def getFileVersion(input_filePath):
     
-    # arting from the base path name givin in the parameters
+    # starting from the base path name given in the parameters
     # also return name for next file in series = next_file
     # If no file exists yet, return curr_file = 'none', new_file = input
+    # EAAJ updated 2-Nov-22 because the original code does not do what it should
     
-    next_version = 0;
-    next_file = input_filePath
+    this_version = 0;
+    this_file = input_filePath
     
-    if os.path.exists(next_file):
-        # loop over up to 20 versions with an added _1, _2 ...etc
-        outPath = pathlib.Path(input_filePath).parent
-        outName = pathlib.Path(input_filePath).stem
-        outExt = pathlib.Path(input_filePath).suffix
-        for version_idx in range(1,21):
-            nextName = outName + '_' + repr(version_idx) + outExt
-            next_file = os.path.join(outPath, nextName)
-            if os.path.exists(next_file) is False:
-                #break out of loop 
-                next_version = version_idx
-                break
-    
+    # loop over up to 21 versions with an added _0, _1 ...etc
+    outPath = pathlib.Path(input_filePath).parent
+    outName = pathlib.Path(input_filePath).stem
+    outExt = pathlib.Path(input_filePath).suffix
+    for next_version in range(1,21):
+        nextName = outName + '_' + repr(next_version) + outExt
+        next_file = os.path.join(outPath, nextName)
+        if os.path.exists(next_file):
+            this_version = next_version
+            this_file = next_file
+        else:
+            break
 
-    return next_file, next_version
+    return this_file, this_version

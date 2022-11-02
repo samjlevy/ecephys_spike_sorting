@@ -19,10 +19,17 @@ def filter_by_metrics(args):
     # find the correct metrics file (eg metrics.csv, metrics_1.csv, ...)
     metrics_file_args = args['cluster_metrics']['cluster_metrics_file']
     metrics_file, version = getFileVersion(metrics_file_args)
-    metrics_file = f"{metrics_file[:-5]}{version-1}.csv"
+        
+    waveform_metrics_file_args = args['waveform_metrics']['waveform_metrics_file']
+    waveform_metrics_file, version = getFileVersion(waveform_metrics_file_args)
     
-    # read the metrics and current cluster assignments
+    # read the metrics files and join with waveforms if previous module failed to
     metrics = pd.read_csv(metrics_file)
+    if 'snr' not in metrics.columns:
+        waveform_metrics = pd.read_csv(waveform_metrics_file)
+        metrics = metrics.merge(waveform_metrics, left_on='cluster_id', right_on='cluster_id')
+    
+    # read cluster assignments
     clusters_file = os.path.join(args['directories']['kilosort_output_directory'], \
                 args['ephys_params']['cluster_group_file_name'])
     clusters = pd.read_csv(clusters_file, sep='\t')
@@ -31,7 +38,8 @@ def filter_by_metrics(args):
     cluster_map = np.load(os.path.join(args['directories']['kilosort_output_directory'], \
                                        'clus_Table.npy'))
     # remove clusters without spikes
-    cluster_map = cluster_map[~np.all(cluster_map == 0, axis=1)]
+    cluster_map = cluster_map[~(cluster_map[:,0] == 0)]
+        
     # convert from channel # to depth (floor(ch/2+1)*20)
     depths = cluster_map[:,1]/2+1
     depths = depths.astype(int)

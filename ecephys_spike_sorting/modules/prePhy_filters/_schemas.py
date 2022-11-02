@@ -1,7 +1,7 @@
 from argschema import ArgSchema
 from argschema.schemas import DefaultSchema
 from argschema.fields import Nested, String, Float, Int
-from ...common.schemas import EphysParams, Directories, ClusterMetricsFile
+from ...common.schemas import EphysParams, Directories, ClusterMetricsFile, WaveformMetricsFile
 
 
 class PrePhyFilterParams(DefaultSchema):
@@ -20,6 +20,7 @@ class InputParameters(ArgSchema):
     ephys_params = Nested(EphysParams)
     directories = Nested(Directories)
     cluster_metrics = Nested(ClusterMetricsFile)
+    waveform_metrics = Nested(WaveformMetricsFile)
     
 class OutputSchema(DefaultSchema): 
     input_parameters = Nested(InputParameters, 

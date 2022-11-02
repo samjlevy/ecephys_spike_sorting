@@ -89,11 +89,13 @@ def run_CatGT(args):
     write_catgt_runDir = os.path.join(args['directories']['extracted_data_directory'],write_catgt_runName)
 
     # Rename CatGT run directory to reflect gate indices concatenated
-    mv_cmd = 'mv ' + read_catgt_runDir + ' ' + write_catgt_runDir
+    # mv_cmd = 'mv ' + read_catgt_runDir + ' ' + write_catgt_runDir
+    # subprocess.call(mv_cmd,shell=True)
+    mv_cmd = 'mv ' + read_catgt_runDir + ' ' + read_catgt_runDir
     subprocess.call(mv_cmd,shell=True)
     # Copy the log file to the new run Dir
-    shutil.copyfile(os.path.join(logPath,logName), \
-                    os.path.join(write_catgt_runDir,catgt_logName))
+    # shutil.copyfile(os.path.join(logPath,logName), \
+    #                 os.path.join(write_catgt_runDir,catgt_logName))
     
 
     print('total time: ' + str(np.around(execution_time,2)) + ' seconds')
