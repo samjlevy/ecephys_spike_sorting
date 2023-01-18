@@ -34,7 +34,7 @@ xcoords = zeros(Nchannels,1);
 ycoords = zeros(Nchannels,1);
 for i = 1:length(channel_list)
     ycoords(i,1) = round((channel_list(i)+bank(i)*(Nchannels-1))/2) * 15;
-    xcoords(i,1) = pos(mod(channel_list(i),4)+1);
+    xcoords(i,1) = pos(mod(channel_list(i),4)+1) + (shank(i)-1)*250;
 end
 
 fs = 30000; % sampling frequency
