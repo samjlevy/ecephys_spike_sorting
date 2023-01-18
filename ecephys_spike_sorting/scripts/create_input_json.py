@@ -68,6 +68,8 @@ def createInputJson(output_file,
                     isi_viol_max = 0.2,
                     contam_rate_max = 15,
                     #supercat_string = 'None',
+                    ks_trange = '[0 Inf]',
+                    ks_chanMap = 'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'
                     ):
 
     # hard coded paths to code on your computer and system
@@ -263,7 +265,7 @@ def createInputJson(output_file,
                 "saveRez" : ks_saveRez,
                 "copy_fproc" : ks_copy_fproc,
                 "fproc" : fproc_str,
-                "chanMap" : "'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'",
+                "chanMap" : f"'{ks_chanMap}'",
                 "fshigh" : 150,
                 "minfr_goodchannels" : ks_minfr_goodchannels,
                 "Th" : ks_Th,
@@ -279,7 +281,8 @@ def createInputJson(output_file,
                 "whiteningRange" : ks_whiteningRange,
                 "nNeighbors" : ks_nNeighbors,
                 "CAR" : 0,
-                "spkTh" : ks_spkTh
+                "spkTh" : ks_spkTh,
+                "trange" : ks_trange,
             }
         },
 
