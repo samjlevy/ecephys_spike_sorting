@@ -114,8 +114,9 @@ def call_TPrime(args):
         toStream_path = os.path.join(run_directory, prb_dir, toStream_name)
         
         # convert events in the toStream to sec; they will not be adjusted
-        ks_outdir = 'imec' + str(toStream_prb) + '_ks'
-        st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+        ###ks_outdir = 'imec' + str(toStream_prb) + '_ks'
+        ###st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+        st_file = os.path.join(args['directories']['kilosort_output_directory'], 'spike_times.npy')
         # convert to seconds; if bNPY = True, returned file is an npy file
         # otherwise, text.
         toStream_events_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
@@ -151,14 +152,16 @@ def call_TPrime(args):
             from_list.append(os.path.join(run_directory, prb_dir, c_name))
             c_index = len(from_stream_index)
             # build path to spike times npy file
-            ks_outdir = 'imec' + str(c_prb) + '_ks'
-            st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+            ###ks_outdir = 'imec' + str(c_prb) + '_ks'
+            ###st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+            st_file = os.path.join(args['directories']['kilosort_output_directory'], 'spike_times.npy')
             st_file_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
             events_list.append(st_file_sec)
             from_stream_index.append(c_index)
             # build path for output spike times text file
             out_name = 'spike_times_sec_adj' + outSuffix
-            out_file = os.path.join(run_directory, prb_dir,ks_outdir, out_name)
+            ###out_file = os.path.join(run_directory, prb_dir,ks_outdir, out_name)
+            out_file = os.path.join(args['directories']['kilosort_output_directory'], out_name)
             out_list.append(out_file)
     
         # get index for sync channel in NI. If none or not found, no ni
@@ -241,14 +244,16 @@ def call_TPrime(args):
             from_list.append(os.path.join(run_directory, prb_dir, c_name))
             c_index = len(from_stream_index)
             # build path to spike times npy file
-            ks_outdir = 'imec' + str(c_prb) + '_ks'
-            st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+            ###ks_outdir = 'imec' + str(c_prb) + '_ks'
+            ###st_file = os.path.join(run_directory, prb_dir, ks_outdir, 'spike_times.npy')
+            st_file = os.path.join(args['directories']['kilosort_output_directory'], 'spike_times.npy')
             st_file_sec = spike_times_npy_to_sec(st_file, 0, bNPY)
             events_list.append(st_file_sec)
             from_stream_index.append(c_index)
             # build path for output spike times text file
             out_name = 'spike_times_sec_adj' + outSuffix
-            out_file = os.path.join(run_directory, prb_dir, ks_outdir, out_name)
+            ###out_file = os.path.join(run_directory, prb_dir, ks_outdir, out_name)
+            out_file = os.path.join(args['directories']['kilosort_output_directory'], out_name)
             out_list.append(out_file)
 
     print('toStream:')

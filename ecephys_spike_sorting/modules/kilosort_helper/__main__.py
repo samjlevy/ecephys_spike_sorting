@@ -4,6 +4,7 @@ from argschema import ArgSchemaParser
 import os
 import time
 import shutil
+import re
 
 import numpy as np
 
@@ -163,6 +164,16 @@ def run_kilosort(args):
     # alredy have path to chanMap = destFullPath
     cm_save_name = metaName + '_chanMap.mat'
     shutil.copy(destFullPath, os.path.join(dat_dir, cm_save_name))
+    
+    # adjust spike times if analyzing only a subset of the data
+    st_file = os.path.join(args['directories']['kilosort_output_directory'], 'spike_times.npy')
+    st = np.load(st_file)
+    trange= args['kilosort_helper_params']['kilosort2_params']['trange']
+    start_time = int(re.search(r'\d+',trange).group(0))
+    fs = args['ephys_params']['sample_rate']
+    start_ind = int(start_time*fs)
+    st = st + start_ind
+    np.save(st_file, st)
 
     if args['kilosort_helper_params']['ks_make_copy']:
         # get the kilsort output directory name
