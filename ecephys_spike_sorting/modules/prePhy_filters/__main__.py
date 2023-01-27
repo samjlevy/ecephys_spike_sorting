@@ -58,8 +58,15 @@ def filter_by_metrics(args):
         label = clusters['group'].loc[clusters['cluster_id']==row['cluster_id']].item()
         
         # find noise clusters
+        # for HPC: allow wider waveforms as long as they are not too flat
+        if args['prephy_filters_params']['wide_halfwidth_max'] < args['prephy_filters_params']['halfwidth_max']:
+            if (row['halfwidth']>args['prephy_filters_params']['halfwidth_max']) & \
+                (row['halfwidth']<=args['prephy_filters_params']['wide_halfwidth_max']):
+                    if row['repolarization_slope']<args['prephy_filters_params']['repo_slope']:
+                        label = 'noise'
+                        noise_clusters += 1
         if ((row['snr']<args['prephy_filters_params']['snr_min']) & (row['snr']>0)) | \
-            (row['halfwidth']>args['prephy_filters_params']['halfwidth_max']) | \
+            (row['halfwidth']>args['prephy_filters_params']['wide_halfwidth_max']) | \
             (row['firing_rate']<args['prephy_filters_params']['mua_fr_min']) | \
             (row['depth']>args['prephy_filters_params']['depth']):
                 label = 'noise'

@@ -24,7 +24,7 @@ kcoords = shank;
 
 %%
 % create a channel map
-pos = [32, 0, 32, 0]; % possible x-positions on shank
+pos = [32, 0]; % possible x-positions on shank
 Nchannels = 384; % if there is a sync channel, otherwise 384
 connected = true(Nchannels, 1);
 connected(192, 1) = false; % exclude reference and sync channel
@@ -34,7 +34,7 @@ xcoords = zeros(Nchannels,1);
 ycoords = zeros(Nchannels,1);
 for i = 1:length(channel_list)
     ycoords(i,1) = round((channel_list(i)+bank(i)*(Nchannels-1))/2) * 15;
-    xcoords(i,1) = pos(mod(channel_list(i),4)+1) + (shank(i)-1)*250;
+    xcoords(i,1) = pos(mod(channel_list(i),2)+1) + (shank(i)-1)*250;
 end
 
 fs = 30000; % sampling frequency
