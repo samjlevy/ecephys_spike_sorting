@@ -2,7 +2,7 @@
 % sufficiently customizable for your needs
 % Run each section independently or fill values at 1. and 3. and run script
 % Designed for 2.0 4-shank probes
-% Adapted entirely from Charlie Walter's IMRO GUI
+% Adapted entirely from Charlie Walters's IMRO GUI
 % (https://github.com/ckwalters/npx2_site_gui)
 
 %% 1. User inputs
@@ -56,15 +56,6 @@ end
 % active_electrodes(3,177:224) = 1;
 
 %% 4. Confirm these sites can be multiplexed
-% Find which channels cannot be multiplexed with each site
-% channel_lookup = cell(1,n_channels);
-% for channelInd = 1:n_channels
-%     [shanks,electrodes] = find(channel_map==(channelInd-1));
-%     shanks = shanks-1; % find function produces indices that are 1-indexed
-%     electrodes = electrodes-1;
-%     channel_lookup{channelInd} = [shanks electrodes]; % either 13 or 14 electrodes per channel
-% end
-
 % Check if enough channels specified
 if sum(sum(active_electrodes))~=n_channels
     error('%d channels specified. Please specify %d channels.',sum(sum(active_electrodes)),n_channels)
