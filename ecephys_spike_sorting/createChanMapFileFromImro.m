@@ -1,6 +1,6 @@
 % main data
-directory = 'Z:\Chronic_NPX_Troubleshooting\2_probe_pilot\IMRO';
-name = 'Orville_MEC_spare';
+directory = 'Z:\WT_Sequences\2023_spring\Raw_Data\Neural_Traces\IMRO';
+name = 'Noether_MEC';
 
 %%
 % read imro file
