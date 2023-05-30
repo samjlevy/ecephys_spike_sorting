@@ -11,9 +11,7 @@ class PrePhyFilterParams(DefaultSchema):
     wide_halfwidth_max = Float(required=False, default=0.3, help='Max halfwidth (combined with repo_slope) for non-noise clusters')
     repo_slope = Float(required=False, default=0.05, help='Min repolarization slope for wide, non-noise clusters')
     mua_fr_min = Float(required=False, default=0.01, help='Min FR for non-noise clusters')
-    depth = Int(required=False, default=3200, help='Depth (microns) from probe tip to brain surface')
-    isi_viol_max = Float(required=False, default=0.2, help='Max % ISI violations')
-    contam_rate_max = Float(required=False, default=15, help='Max contamination rate for good clusters')
+    isi_viol_max = Float(required=False, default=0.2, help='Max % ISI violations for good clusters')
     good_fr_min = Float(required=False, default=0.05, help='Min FR for good clusters')
 
 class InputParameters(ArgSchema):

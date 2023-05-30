@@ -34,17 +34,6 @@ def filter_by_metrics(args):
                 args['ephys_params']['cluster_group_file_name'])
     clusters = pd.read_csv(clusters_file, sep='\t')
     
-    # load channels for each cluster to get depths
-    cluster_map = np.load(os.path.join(args['directories']['kilosort_output_directory'], \
-                                       'clus_Table.npy'))
-    # remove clusters without spikes
-    cluster_map = cluster_map[~(cluster_map[:,0] == 0)]
-        
-    # convert from channel # to depth (floor(ch/2+1)*20)
-    depths = cluster_map[:,1]/2+1
-    depths = depths.astype(int)
-    metrics['depth'] = depths*20
-        
     # save a copy of the original labels
     clusters_original = clusters.rename(columns={'group':'original_group'})
     clusters_original.to_csv(clusters_file[:-4]+'_original.tsv', sep='\t', index=False)
@@ -65,18 +54,19 @@ def filter_by_metrics(args):
                     if row['repolarization_slope']<args['prephy_filters_params']['repo_slope']:
                         label = 'noise'
                         noise_clusters += 1
+                        print(f'Reclassified unit {i} as noise')
         if ((row['snr']<args['prephy_filters_params']['snr_min']) & (row['snr']>0)) | \
             (row['halfwidth']>args['prephy_filters_params']['wide_halfwidth_max']) | \
-            (row['firing_rate']<args['prephy_filters_params']['mua_fr_min']) | \
-            (row['depth']>args['prephy_filters_params']['depth']):
+            (row['firing_rate']<args['prephy_filters_params']['mua_fr_min']):
                 label = 'noise'
                 noise_clusters += 1
+                print(f'Reclassified unit {i} as noise')
         elif (label=='good') & \
             (((row['isi_viol']>args['prephy_filters_params']['isi_viol_max']) & (row['num_viol']>1)) | \
-            (row['contam_rate']>args['prephy_filters_params']['contam_rate_max']) | \
             (row['firing_rate']<args['prephy_filters_params']['good_fr_min'])):
                 label = 'mua'
                 mua_clusters += 1
+                print(f'Reclassified unit {i} as mua')
         labels.append(label)
 
     # write output
