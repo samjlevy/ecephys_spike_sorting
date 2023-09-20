@@ -31,7 +31,9 @@ def filter_by_metrics(args):
     
     # read cluster assignments
     clusters_file = os.path.join(args['directories']['kilosort_output_directory'], \
-                args['ephys_params']['cluster_group_file_name'])
+                'cluster_KSLabel.tsv')
+    #clusters_file = os.path.join(args['directories']['kilosort_output_directory'], \
+    #            args['ephys_params']['cluster_group_file_name'])
     clusters = pd.read_csv(clusters_file, sep='\t')
     
     # save a copy of the original labels
@@ -40,33 +42,26 @@ def filter_by_metrics(args):
     
     # change the labels that meet MUA filters
     labels = [ ]
+    good_clusters = 0
     mua_clusters = 0
     noise_clusters = 0
     for i, row in metrics.iterrows():
         # start with original label; overwrite 
-        label = clusters['group'].loc[clusters['cluster_id']==row['cluster_id']].item()
+        #label = clusters['KSLabel'].loc[clusters['cluster_id']==row['cluster_id']].item()
+        #label = clusters['group'].loc[clusters['cluster_id']==row['cluster_id']].item()
+        filters = args['prephy_filters_params']
         
         # find noise clusters
-        # for HPC: allow wider waveforms as long as they are not too flat
-        if args['prephy_filters_params']['wide_halfwidth_max'] < args['prephy_filters_params']['halfwidth_max']:
-            if (row['halfwidth']>args['prephy_filters_params']['halfwidth_max']) & \
-                (row['halfwidth']<=args['prephy_filters_params']['wide_halfwidth_max']):
-                    if row['repolarization_slope']<args['prephy_filters_params']['repo_slope']:
-                        label = 'noise'
-                        noise_clusters += 1
-                        print(f'Reclassified unit {i} as noise')
-        if ((row['snr']<args['prephy_filters_params']['snr_min']) & (row['snr']>0)) | \
-            (row['halfwidth']>args['prephy_filters_params']['wide_halfwidth_max']) | \
-            (row['firing_rate']<args['prephy_filters_params']['mua_fr_min']):
-                label = 'noise'
-                noise_clusters += 1
-                print(f'Reclassified unit {i} as noise')
-        elif (label=='good') & \
-            (((row['isi_viol']>args['prephy_filters_params']['isi_viol_max']) & (row['num_viol']>1)) | \
-            (row['firing_rate']<args['prephy_filters_params']['good_fr_min'])):
-                label = 'mua'
-                mua_clusters += 1
-                print(f'Reclassified unit {i} as mua')
+        if (row['snr']<filters['snr_min']) || (row['firing_rate']<filters['mua_fr_min']) || \
+            (row['halfwidth']>=filters['halfwidth_max']):
+            label = 'noise'
+            noise_clusters += 1
+        elif (row['isi_viol']>filters['isi_viol_max']) && (row['isi_viol']>filters['n_viol_max']):
+            label = 'mua'
+            mua_clusters += 1
+        else:
+            label = 'good'
+            good_clusters += 1
         labels.append(label)
 
     # write output
@@ -74,7 +69,7 @@ def filter_by_metrics(args):
     						labels, 
     						args['directories']['kilosort_output_directory'], 
     						args['ephys_params']['cluster_group_file_name'])
-    print(f'Reclassified {mua_clusters} clusters as MUA and {noise_clusters} clusters as noise from {len(metrics)} clusters')
+    print(f'Clusters classified: {good_clusters} good, {mua_clusters} MUA, and {noise_clusters} noise from {len(metrics)} clusters')
     
     execution_time = time.time() - start
     print('total time: ' + str(np.around(execution_time,2)) + ' seconds')

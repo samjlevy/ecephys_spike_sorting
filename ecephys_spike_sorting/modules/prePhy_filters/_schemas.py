@@ -6,13 +6,11 @@ from ...common.schemas import EphysParams, Directories, ClusterMetricsFile, Wave
 
 class PrePhyFilterParams(DefaultSchema):
     
-    snr_min = Float(required=False, default=2, help='Min SNR for non-noise clusters')
+    snr_min = Float(required=False, default=1, help='Min SNR for non-noise clusters')
     halfwidth_max = Float(required=False, default=0.3, help='Max halfwidth for non-noise clusters')
-    wide_halfwidth_max = Float(required=False, default=0.3, help='Max halfwidth (combined with repo_slope) for non-noise clusters')
-    repo_slope = Float(required=False, default=0.05, help='Min repolarization slope for wide, non-noise clusters')
-    mua_fr_min = Float(required=False, default=0.01, help='Min FR for non-noise clusters')
+    fr_min = Float(required=False, default=0.05, help='Min FR for non-noise clusters')
     isi_viol_max = Float(required=False, default=0.2, help='Max % ISI violations for good clusters')
-    good_fr_min = Float(required=False, default=0.05, help='Min FR for good clusters')
+    n_viol_max = Float(required=False, default=1, help='Max # ISI violations for good clusters')
 
 class InputParameters(ArgSchema):
     

@@ -52,7 +52,7 @@ def classify_noise_templates(args):
     for i, ci in enumerate(ci_tmp):
         if is_noise[cluster_ids==ci]:
             labels.append('noise')
-            print(f"{ci} matches noise template")
+            print(f"{cluster_group[i]} unit {ci} matches noise template")
         else:
             labels.append(cluster_group[i])
 
