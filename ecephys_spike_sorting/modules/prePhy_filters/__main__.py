@@ -52,11 +52,11 @@ def filter_by_metrics(args):
         filters = args['prephy_filters_params']
         
         # find noise clusters
-        if (row['snr']<filters['snr_min']) || (row['firing_rate']<filters['mua_fr_min']) || \
+        if (row['snr']<filters['snr_min']) | (row['firing_rate']<filters['fr_min']) | \
             (row['halfwidth']>=filters['halfwidth_max']):
             label = 'noise'
             noise_clusters += 1
-        elif (row['isi_viol']>filters['isi_viol_max']) && (row['isi_viol']>filters['n_viol_max']):
+        elif (row['isi_viol']>filters['isi_viol_max']) & (row['num_viol']>filters['n_viol_max']):
             label = 'mua'
             mua_clusters += 1
         else:
