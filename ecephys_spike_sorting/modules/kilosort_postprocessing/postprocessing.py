@@ -64,6 +64,11 @@ def remove_double_counted_spikes(spike_times, spike_clusters, spike_templates,
 
     """
     include_pcs = params['include_pcs']
+    
+    # if Kilosort failed to save .tsv outputs for every template, 
+    # ignore missing templates
+    if templates.shape[0]>len(cluster_amplitude):
+        templates = templates[0:len(cluster_amplitude),:,:]
 
     peak_chan_idx = np.squeeze(np.argmax(np.max(templates,1) - np.min(templates,1),1))
 
@@ -80,7 +85,6 @@ def remove_double_counted_spikes(spike_times, spike_clusters, spike_templates,
     sorted_unit_list = unit_list[order]
 
     overlap_matrix = np.zeros((num_clusters, num_clusters), dtype = 'int')
-    
 
     within_unit_overlap_samples = int(params['within_unit_overlap_window'] * sample_rate)
     between_unit_overlap_samples = int(params['between_unit_overlap_window'] * sample_rate)
