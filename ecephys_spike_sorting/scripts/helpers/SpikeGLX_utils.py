@@ -62,6 +62,8 @@ def EphysParams(metaFullPath):
         pType = (meta['imDatPrb_type'])
         if pType =='0':
             probe_type = 'NP1'
+        elif pType=='2013':
+            probe_type = 'NP24'
         else:
             probe_type = 'NP' + pType
     else:

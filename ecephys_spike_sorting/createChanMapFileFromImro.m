@@ -1,6 +1,6 @@
 % main data
-directory = 'Z:\WT_Sequences\2023_spring\Raw_Data\Neural_Traces\IMRO';
-name = 'Noether_MEC';
+directory = '\\oak-smb-giocomo.stanford.edu\groups\giocomo\export\data\Projects\JohnKei_NPH3\WenSorscher2023_revisions';%'Z:\WT_Sequences\2023_spring\Raw_Data\Neural_Traces\IMRO';
+name = 'AO4_v1';%'Noether_MEC';
 
 %%
 % read imro file
