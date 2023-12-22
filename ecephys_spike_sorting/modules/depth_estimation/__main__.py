@@ -6,9 +6,9 @@ from pathlib import Path
 
 import numpy as np
 
-from .depth_estimation import compute_channel_offsets, find_surface_channel
-from ...common.utils import write_probe_json
-from ...common.SGLXMetaToCoords import MetaToCoords
+from ecephys_spike_sorting.modules.depth_estimation.depth_estimation import compute_channel_offsets, find_surface_channel
+from ecephys_spike_sorting.common.utils import write_probe_json
+from ecephys_spike_sorting.common.SGLXMetaToCoords import MetaToCoords
 
 def run_depth_estimation(args):
 
@@ -37,24 +37,6 @@ def run_depth_estimation(args):
                                 xCoord,
                                 yCoord,
                                 shankInd)
-
-    # computing channel offsets is irrelevant for data prepocessed with catGT
-    # 
-#    print('Computing channel offsets...')
-#
-#    info_ap = compute_channel_offsets(dataAp, 
-#                                   args['ephys_params'], 
-#                                   args['depth_estimation_params'])
-
-#    write_probe_json(args['common_files']['probe_json'], 
-#                     info_ap['channels'], 
-#                     info_ap['offsets'],
-#                     info_ap['scaling'], 
-#                     info_ap['mask'], 
-#                     info_lfp['surface_channel'], 
-#                     info_lfp['air_channel'], 
-#                     xCoord, 
-#                     yCoord)
     
     write_probe_json(args['common_files']['probe_json'], 
                      info_lfp['surface_y'], 
@@ -75,7 +57,7 @@ def run_depth_estimation(args):
 
 def main():
 
-    from ._schemas import InputParameters, OutputParameters
+    from ecephys_spike_sorting.modules.depth_estimation._schemas import InputParameters, OutputParameters
 
     mod = ArgSchemaParser(schema_type=InputParameters,
                           output_schema_type=OutputParameters)

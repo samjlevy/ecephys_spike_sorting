@@ -62,8 +62,6 @@ def EphysParams(metaFullPath):
         pType = (meta['imDatPrb_type'])
         if pType =='0':
             probe_type = 'NP1'
-        elif pType=='2013':
-            probe_type = 'NP24'
         else:
             probe_type = 'NP' + pType
     else:
@@ -74,8 +72,17 @@ def EphysParams(metaFullPath):
     num_channels = int(meta['nSavedChans'])
     
     uVPerBit = Chan0_uVPerBit(meta, probe_type)
+    
+    if 'snsGeomMap' in meta:
+        useGeom = True
+    else:
+        useGeom = False
+        
+    # read shank map to get disabled (reference) channels
+    ref_channels = GetDisabledChan(meta, useGeom)
       
-    return(probe_type, sample_rate, num_channels, uVPerBit)
+    return(probe_type, sample_rate, num_channels, ref_channels, uVPerBit, useGeom)
+
 
 # Return gain for imec channels.
 # Index into these with the original (acquired) channel IDs.
@@ -86,25 +93,63 @@ def Chan0_uVPerBit(meta, probe_type):
     # 3A and NP1 probes; always true for NP2 probes), can use
     # this value for all channels.
     
-    imroList = meta['imroTbl'].split(sep=')')
-    # One entry for each channel plus header entry,
-    # plus a final empty entry following the last ')'
-    # channel zero is the 2nd element in the list
-
-    if probe_type == 'NP21' or probe_type == 'NP24':
-        # NP 2.0; APGain = 80 for all channels
-        # voltage range = 1V
-        # 14 bit ADC
-        uVPerBit = (1e6)*(1.0/80)/pow(2,14)
-    else:
-        # 3A, 3B1, 3B2 (NP 1.0), or other NP 1.0-like probes
-        # voltage range = 1.2V
-        # 10 bit ADC
-        currList = imroList[1].split(sep=' ')   # 2nd element in list, skipping header
-        APgain = float(currList[3])
-        uVPerBit = (1e6)*(1.2/APgain)/pow(2,10)
+    # first check if metadata includes the imChan0apGain key
+    if 'imChan0apGain' in meta:
+        APgain = float(meta['imChan0apGain'])
+        voltage_range = float(meta['imAiRangeMax']) - float(meta['imAiRangeMin'])
+        maxInt = float(meta['imMaxInt'])
+        uVPerBit = (1e6)*(voltage_range/APgain)/(2*maxInt)
+        
+    else:     
+        imroList = meta['imroTbl'].split(sep=')')
+        # One entry for each channel plus header entry,
+        # plus a final empty entry following the last ')'
+        # channel zero is the 2nd element in the list
+    
+        if probe_type == 'NP21' or probe_type == 'NP24':
+            # NP 2.0; APGain = 80 for all channels
+            # voltage range = 1V
+            # 14 bit ADC
+            uVPerBit = (1e6)*(1.0/80)/pow(2,14)
+        elif probe_type == 'NP1110':
+            # UHD2 with switches, special imro table with gain in header            
+            currList = imroList[0].split(sep=',')
+            APgain = float(currList[3])
+            uVPerBit = (1e6)*(1.2/APgain)/pow(2,10)
+        else:
+            # 3A, 3B1, 3B2 (NP 1.0), or other NP 1.0-like probes
+            # voltage range = 1.2V
+            # 10 bit ADC
+            currList = imroList[1].split(sep=' ')   # 2nd element in list, skipping header
+            APgain = float(currList[3])
+            uVPerBit = (1e6)*(1.2/APgain)/pow(2,10)
         
     return(uVPerBit)
+
+
+def GetDisabledChan(meta, useGeom):
+    
+    chanCountList = meta['snsApLfSy'].split(sep=',')
+    AP = int(chanCountList[0])
+    
+    if useGeom is True:
+        useMap = meta['snsGeomMap'].split(sep=')')
+    else:
+        useMap = meta['snsShankMap'].split(sep=')')
+        
+    # loop over known number of AP channels to avoid problems with
+    # extra entries in older data
+    connected = np.zeros((AP,)) 
+    for i in range(AP):
+        # get parameter list from this entry, skipping first header entry
+        currEntry = useMap[i+1]
+        currList = currEntry.split(sep=':')
+        connected[i] = int(currList[3]) 
+        
+    disabled_chan = np.where(connected==0)[0].tolist()
+    
+    return disabled_chan
+
 
 def ParseProbeStr(probe_string):
     
@@ -146,6 +191,15 @@ def ParseTrigStr(trigger_string, prb, gate, prb_folder):
 
     return first_trig, last_trig
 
+
+def ParseGateStr(gate_string):
+    str_list = gate_string.split(',')
+    first_gate = int(str_list[0])
+    if len(str_list) > 1:
+        last_gate = int(str_list[1])
+    else:
+        last_gate = first_gate
+    return first_gate, last_gate
 
 def ParseTcatName(tcat_name):    
     tcat_pos = tcat_name.find('tcat',0)
@@ -215,6 +269,15 @@ def CreateNITimeEvents(catGT_run_name, gate_string, catGT_dest):
     out_name = catGT_run_name + '_g' + gate_string + '_tcat.nidq.times.npy'
     out_path = os.path.join(catGT_dest, output_folder, out_name)
     np.save(out_path,ni_times)
-
+    
+    # check for presence of an fyi file, indicating run with catgt 3.0 or later
+    fyi_path = Path(os.path.join(catGT_dest, output_folder, catGT_run_name + '_g' + gate_string + '_all_fyi.txt'))
+    print(fyi_path)
+    fyi_exists = Path(fyi_path).is_file()
+    if fyi_exists:
+        # append a line for the newly created times file        
+        file_fyi = open(fyi_path, "a")  # append mode
+        file_fyi.write('times_ni_N=' + out_path + '\n')
+        file_fyi.close()
 
     return

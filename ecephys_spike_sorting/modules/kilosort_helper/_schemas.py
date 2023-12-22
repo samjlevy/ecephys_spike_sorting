@@ -24,6 +24,7 @@ class Kilosort2Parameters(DefaultSchema):
     copy_fproc = Int(required=False, default=1, help='Copy processed binary to output directory')
   
     chanMap = String(required=False, default="'chanMap.mat'", help='path to channel map .mat file')
+    doFilter = Int(required=False, default=1, help='filter if = 1, skip bp filetering and CAR if = 0')
     fshigh = Int(required=False, default=150, help='frequency for high pass filtering')
     minfr_goodchannels = Float(required=False, default=0.1, help='minimum firing rate on a "good" channel (0 to skip)')
     Th = String(required=False, default='[10 4]', help='threshold (last pass can be lower')
@@ -51,6 +52,7 @@ class Kilosort2Parameters(DefaultSchema):
     LTseed = Int(required=False, default=1, help='random seed for learnTemplates')
     nNeighbors = Int(required=False, default=32, help='number of channels to include in template')
     CAR = Int(required=False, default=1, help='1 to use CAR, 0 to skip')
+    nblocks = Int(required=False, default=5, help='for KS2.5 and KS3.0, set to 0 for rigid registration in drift correction, higher values non-rigid')
 
 class KilosortHelperParameters(DefaultSchema):
 
@@ -60,6 +62,7 @@ class KilosortHelperParameters(DefaultSchema):
     ks_make_copy = Bool(required=False, default=False, help='If true, make a copy of the original KS output')
 
     surface_channel_buffer = Int(required=False, default=15, help='Number of channels above brain surface to include in spike sorting')
+    noise_threshold = Float(required=False, default=20., help='rms - median rms noise threhold, uV')
 
     matlab_home_directory = InputDir(help='Location from which Matlab files can be copied and run.')
     kilosort_repository = InputDir(help='Local directory for the Kilosort source code repository.')

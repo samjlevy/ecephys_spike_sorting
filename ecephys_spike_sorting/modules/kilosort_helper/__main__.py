@@ -37,7 +37,8 @@ def run_kilosort(args):
     mask = get_noise_channels(args['ephys_params']['ap_band_file'],
                               args['ephys_params']['num_channels'],
                               args['ephys_params']['sample_rate'],
-                              args['ephys_params']['bit_volts'])
+                              args['ephys_params']['bit_volts'],
+                              args['kilosort_helper_params']['noise_threshold'])
      
     
     if args['kilosort_helper_params']['spikeGLX_data']:
@@ -50,7 +51,8 @@ def run_kilosort(args):
        metaFullPath = Path(metaName + '.meta')
 
        destFullPath = os.path.join(args['kilosort_helper_params']['matlab_home_directory'], 'chanMap.mat')
-       MaskChannels = np.where(mask == False)[0]      
+       MaskChannels = np.where(mask == False)[0]
+       print('Indentfied noise channels: ' + repr(MaskChannels))
        MetaToCoords( metaFullPath=metaFullPath, outType=1, badChan=MaskChannels, destFullPath=destFullPath)
        # end of SpikeGLX block
        

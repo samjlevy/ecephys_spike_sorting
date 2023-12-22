@@ -31,21 +31,25 @@ def createInputJson(output_file,
                     gate_list_string='0',
                     trigger_string='0,0',
                     probe_string='0',
+                    depth_est_fig = 0,
                     catGT_stream_string = '-ap',
                     catGT_car_mode = 'gbldmx',
                     catGT_loccar_min_um = 40,
                     catGT_loccar_max_um = 160,
-                    catGT_cmd_string = '-prb_fld -out_prb_fld', #-aphipass=300-gfix=0.40,0.10,0.02
+                    catGT_cmd_string = '-prb_fld -out_prb_fld',
+                    catGT_maxZ_um = -1,
                     noise_template_use_rf = True,
-                    event_ex_param_str = 'XD=4,1,50',
+                    event_ex_param_str = '',
                     tPrime_im_ex_list = 'SY=0,384,6,500',
                     tPrime_ni_ex_list = 'XA=0,1,3,500',
                     sync_period = 1.0,
                     toStream_sync_params = 'SY=0,384,6,500',
                     niStream_sync_params = 'XA=0,1,3,500',
                     tPrime_3A = False,
-                    toStream_path_3A = None,
-                    fromStream_list_3A = None,
+                    toStream_path_3A = ' ',
+                    fromStream_list_3A = list(),
+                    ks_helper_noise_threshold = 20,
+                    ks_doFilter = 0,
                     ks_remDup = 0,                   
                     ks_finalSplits = 1,
                     ks_labelGood = 1,
@@ -57,17 +61,20 @@ def createInputJson(output_file,
                     ks_CSBseed = 1,
                     ks_LTseed = 1,
                     ks_templateRadius_um = 163,
+                    ks_nblocks = 5,
+                    ks_CAR = 0,
+                    ks_output_tag = 'ks',
                     c_Waves_snr_um = 160,
+                    wm_spread_thresh = 0.12,
+                    wm_site_range = 16,
                     qm_isi_thresh = 1.5/1000,
                     include_pcs = True,
-                    ks_AUCsplit = 0.9,
-                    ks_spkTh = -6,
+                    ks_nNeighbors_sites_fix = 0,
                     snr_min = 1,
                     halfwidth_max = 0.3,
                     fr_min = 0.05,
                     isi_viol_max = 0.2,
                     n_viol_max = 1,
-                    #supercat_string = 'None',
                     ks_trange = '[0 Inf]',
                     ks_chanMap = 'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'
                     ):
@@ -124,10 +131,12 @@ def createInputJson(output_file,
         #
         # 
         if input_meta_path is not None:
-            probe_type, sample_rate, num_channels, uVPerBit = SpikeGLX_utils.EphysParams(input_meta_path)  
+            probe_type, sample_rate, num_channels, reference_channels, \
+                uVPerBit, useGeom = SpikeGLX_utils.EphysParams(input_meta_path)  
             print('SpikeGLX params read from meta')
             print('probe type: {:s}, sample_rate: {:.5f}, num_channels: {:d}, uVPerBit: {:.4f}'.format\
                   (probe_type, sample_rate, num_channels, uVPerBit))
+            print('reference channels: ' + repr(reference_channels))
         
         #print('kilosort output directory: ' + kilosort_output_directory )
 
@@ -138,7 +147,7 @@ def createInputJson(output_file,
 
             
 
-    # geometry params by probe type. expand the dictoionaries to add types
+    # geometry params by probe type. expand the dictionaries to add types
     # vertical probe pitch vs probe type
     vpitch = {'3A': 20, 'NP1': 20, 'NP21': 15, 'NP24': 15, 'NP1100': 6, 'NP1300':20}  
     hpitch = {'3A': 32, 'NP1': 32, 'NP21': 32, 'NP24': 32, 'NP1100': 6, 'NP1300':48} 
@@ -166,9 +175,15 @@ def createInputJson(output_file,
     maxNeighbors = 64 # 64 for standard build of KS
     nrows = np.sqrt((np.square(ks_templateRadius_um) - np.square(hpitch.get(probe_type))))/vpitch.get(probe_type)
     ks_nNeighbors = int(round(2*nrows*nColumn.get(probe_type)))
+    
+    # workaround for nonstandard patterns
+    print('ks_nNeighbors_sites_fix: ', ks_nNeighbors_sites_fix)
+    if ks_nNeighbors_sites_fix > 0:
+        ks_nNeighbors = ks_nNeighbors_sites_fix
+    
     if ks_nNeighbors > maxNeighbors:
         ks_nNeighbors = maxNeighbors          
-    #print('ks_nNeighbors: ' + repr(ks_nNeighbors))
+    print('ks_nNeighbors: ' + repr(ks_nNeighbors))
     
     c_waves_radius_sites = int(round(c_Waves_snr_um/vpitch.get(probe_type)))
 
@@ -226,7 +241,7 @@ def createInputJson(output_file,
         "depth_estimation_params" : {
             "hi_noise_thresh" : 50.0,
             "lo_noise_thresh" : 3.0,
-            "save_figure" : 1,
+            "save_figure" : depth_est_fig,
             "figure_location" : os.path.join(extracted_data_directory, 'probe_depth.png'),
             "smoothing_amount" : 5,
             "power_thresh" : 2.5,
@@ -255,6 +270,7 @@ def createInputJson(output_file,
             "spikeGLX_data" : True,
             "ks_make_copy": ks_make_copy,
             "surface_channel_buffer" : 15,
+            "noise_threshold" : ks_helper_noise_threshold,
 
             "kilosort2_params" :
             {
@@ -270,7 +286,7 @@ def createInputJson(output_file,
                 "minfr_goodchannels" : ks_minfr_goodchannels,
                 "Th" : ks_Th,
                 "lam" : 10,
-                "AUCsplit" : ks_AUCsplit, #0.9,
+                "AUCsplit" : 0.9,
                 "minFR" : 0.01,#1/50.,
                 "momentum" : '[20 400]',
                 "sigmaMask" : 30,
@@ -280,20 +296,46 @@ def createInputJson(output_file,
                 "LTseed" : ks_LTseed,
                 "whiteningRange" : ks_whiteningRange,
                 "nNeighbors" : ks_nNeighbors,
-                "CAR" : 0,
-                "spkTh" : ks_spkTh,
+                "CAR" : ks_CAR,
+                "nblocks" : ks_nblocks,
                 "trange" : ks_trange,
             }
         },
+        
+        "pykilosort_helper_params" : {
+            "preprocessing_function" : 'kilosort2',           
+            "copy_fproc" : ks_copy_fproc,
+            "fproc" : fproc_str,
+            "seed" : ks_LTseed,
+            "ks2_mode" : False,
+            "perform_drift_registration" : True,
+            "car" : ks_CAR,
+            "Th" : ks_Th,
+            "ThPre" : 8,
+            "lam" : 10,
+            "AUCsplit" : 0.9,
+            "minFR" : 1/50.,
+            "momentum" : '[20 400]',
+            "sig_datashift" : 20,
+            "sigmaMask" : 30,
+            "fshigh" : 300,
+            "fslow" : 10000,
+            "minfr_goodchannels" : 0,
+            "whiteningRange" : ks_whiteningRange,            
+            "deterministic_mode" : True,            
+            "nblocks" : ks_nblocks,
+            "doFilter" : ks_doFilter
 
-# as implemented, "within_unit_overlap window" must be >= "between unit overlap window"
+        },
+
+
         "ks_postprocessing_params" : {
             "align_avg_waveform" : False,              
             "remove_duplicates" : True,
             "cWaves_path" : cWaves_path,
-            "within_unit_overlap_window" : 0.000333,
-            "between_unit_overlap_window" : 0.000333,
-            "between_unit_dist_um" : 42,
+            "within_unit_overlap_window" : 0.00017,
+            "between_unit_overlap_window" : 0.00041,
+            "between_unit_dist_um" : 66,
             "deletion_mode" : 'lowAmpCluster',
             "include_pcs" : include_pcs
         },
@@ -305,11 +347,12 @@ def createInputJson(output_file,
             "pre_samples" : 20,
             "num_epochs" : 1,           #epochs not implemented for c_waves
             "spikes_per_epoch" : 1000,
-            "spread_threshold" : 0.12,
-            "site_range" : 16,    
+            "spread_threshold" : wm_spread_thresh,
+            "site_range" : wm_site_range,  
             "cWaves_path" : cWaves_path,
             "use_C_Waves" : True,
-            "snr_radius" : c_waves_radius_sites       
+            "snr_radius" : c_waves_radius_sites,
+            "snr_radius_um" : c_Waves_snr_um     
         },
             
 
@@ -342,6 +385,10 @@ def createInputJson(output_file,
             "car_mode" : catGT_car_mode,
             "loccar_inner" : catGT_loccar_min_sites,
             "loccar_outer": catGT_loccar_max_sites,
+            "loccar_inner_um" : catGT_loccar_min_um,
+            "loccar_outer_um" : catGT_loccar_max_um,
+            "maxZ_um" : catGT_maxZ_um,
+            'useGeom' : useGeom,
             "cmdStr" : catGT_cmd_string,
             "catGTPath" : catGTPath
         },
@@ -355,7 +402,9 @@ def createInputJson(output_file,
                 "ni_sync_params" : niStream_sync_params,
                 "tPrime_3A" : tPrime_3A,
                 "toStream_path_3A" : toStream_path_3A,
-                "fromStream_list_3A" : fromStream_list_3A
+                "fromStream_list_3A" : fromStream_list_3A,
+                "psth_ex_str": event_ex_param_str,
+                "sort_out_tag": ks_output_tag
         },  
         
         "prephy_filters_params" : {

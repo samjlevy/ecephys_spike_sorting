@@ -80,7 +80,7 @@ def remove_double_counted_spikes(spike_times, spike_clusters, spike_templates,
     
     order = np.argsort(peak_channels)
     
-    unit_list = np.arange(order.size+1)
+    unit_list = np.arange(order.size)
     
     sorted_unit_list = unit_list[order]
 
@@ -124,7 +124,7 @@ def remove_double_counted_spikes(spike_times, spike_clusters, spike_templates,
 
         for_unit1 = np.where(spike_clusters == unit_id1)[0]
         
-        for idx2, unit_id2 in enumerate(unit_list[order]):
+        for idx2, unit_id2 in enumerate(sorted_unit_list):
             
             deltaX = np.squeeze(channel_pos[peak_chan_idx[unit_id2],0] - channel_pos[peak_chan_idx[unit_id1],0])
             deltaZ = np.squeeze(channel_pos[peak_chan_idx[unit_id2],1] - channel_pos[peak_chan_idx[unit_id1],1])
@@ -156,7 +156,7 @@ def remove_double_counted_spikes(spike_times, spike_clusters, spike_templates,
                                                                          include_pcs)
 #   build overlap summary 
     overlap_summary = np.zeros((num_clusters, 5), dtype=int )
-    for idx1, unit_id1 in enumerate(unit_list[order]):
+    for idx1, unit_id1 in enumerate(sorted_unit_list):
         overlap_summary[idx1,0] = unit_id1
         overlap_summary[idx1,1] = np.sum(spike_clusters == unit_id1)
         overlap_summary[idx1,2] = overlap_matrix[idx1,idx1]
@@ -230,12 +230,54 @@ def find_between_unit_overlap(spike_train1, spike_train2, amp1, amp2, overlap_wi
     sorted_train = spike_train[order]
 #   trim off the first member of the array of cluster labels; means the later spike will be picked for any pair
     sorted_cluster_ids = cluster_ids[order][1:]
+    id_diffs = np.diff(cluster_ids[order])
 
 #   Note that when applying this method to spike trains from two different clusters, we are assuming that
-#   any pair within the overlap window will consist of a spike from each train. Therefor, only works if
+#   any pair within the overlap window will consist of a spike from each train. Therefore, only works if
 #   the "within_unit_overlap_window" is >= "between_unit_overlap_window".
     
-    spikes_to_remove = np.diff(sorted_train) < overlap_window
+    if deletionMode == 'deleteFirst':
+        spikes_to_remove = np.diff(sorted_train) < overlap_window
+    else:
+        # Capturing the same spikes with different templates results in a 
+        # group of spikes with fixed difference in time. Check for this peak,
+        # remove spikes from the lower amplitude unit that occur ihe peak.
+        spike_diffs = np.diff(sorted_train)
+        cent_bin_edges = np.arange(0, (overlap_window+4),2)
+        cent_hist = np.histogram(spike_diffs,cent_bin_edges)   
+        cent_max = np.amax(cent_hist[0])
+        cent_max_ind = np.argmax(cent_hist[0])
+        rem_range = 2  # in bins, on either sideof peak. total bins removed = 2*rem_range + 1
+        # peak must be:
+        # in the interior of the window
+        # greater than 20 spikes (avoiding noise)
+        # greater than 10X the minimum value
+        if (cent_max_ind < len(cent_hist[0])-1 ) and (cent_max > 10*np.amin(cent_hist[0])) and (cent_max > 20) :
+            cent_dig = np.digitize(spike_diffs,cent_bin_edges)
+            # Zero in digitized data => spike < lowest edge value. 
+            # so zero is an 'extra' value. Dig value that corresponds
+            # to peak is therefore cent_max_ind + 1
+            # remove peak and the two neighbor bins, as long as those bins are not edges
+            max_val = len(cent_bin_edges)
+            peak_val = cent_max_ind + 1
+            min_rem = np.amax([peak_val-rem_range,1])
+            max_rem = np.amin([peak_val+rem_range,max_val])
+            spikes_to_remove = (cent_dig >= min_rem) & (cent_dig <= max_rem)
+            # if (peak_val > 1) and (peak_val < max_val-1):
+            #     spikes_to_remove = (cent_dig == peak_val) | (cent_dig == peak_val-1) | (cent_dig == peak_val+1)
+            # elif (peak_val == 1):
+            #     spikes_to_remove = (cent_dig == peak_val) | (cent_dig == peak_val+1)
+            # elif (peak_val == max_val-1):
+            #     spikes_to_remove = (cent_dig == peak_val) | (cent_dig == peak_val-1) 
+            # else:
+            #     print('problem with center histogram')
+            #     spikes_to_remove = np.full(spike_diffs.shape,False)
+        else:
+            spikes_to_remove = np.full(spike_diffs.shape,False)
+
+# With either means of selecting which spikes to omit, only indlude cases where the 
+# two spikes are from different units
+    spikes_to_remove = spikes_to_remove & (id_diffs != 0)
 
     if deletionMode == 'deleteFirst':
 #   trim off the first member of the array of sorted inds; means the later spike will be picked for any pair
@@ -246,7 +288,7 @@ def find_between_unit_overlap(spike_train1, spike_train2, amp1, amp2, overlap_wi
 #    for first member of a pair, need sorted index array starting from 0; for late, start from 1
         lateInd = original_inds[order][1:]
         earlyInd = original_inds[order][0:(len(original_inds)-1)]
-        if ( amp1 < amp2 ):
+        if ( amp1 <= amp2 ):
 #       Remove spikes the cluster with lower amplitude; many duplicate cases are 
 #       fitting a tail on a large amplitude feature with a low amplitude spike
 #        if (len(spike_train1) < len(spike_train2)):

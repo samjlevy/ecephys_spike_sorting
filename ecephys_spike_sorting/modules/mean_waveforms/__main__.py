@@ -61,7 +61,14 @@ def calculate_mean_waveforms(args):
                 os.rename(old_snr, new_snr)
 
         
-            
+        # kilosort saves the spike_clusters files as uint32. 
+        # when phy re-saves after curation, it saves as int32 (!)
+        # to ensure the correct datatype for C_Waves, load the spike_clusters
+        # and convert if necessary
+        sc = np.load(clus_lbl_npy)
+        if sc.dtype != 'uint32':
+            sc = sc.astype('uint32')
+            np.save(clus_lbl_npy,sc)
         
         
         # path to the 'runit.bat' executable that calls C_Waves.
@@ -81,12 +88,13 @@ def calculate_mean_waveforms(args):
                                 ' -samples_per_spike=' + repr(args['mean_waveform_params']['samples_per_spike']) + \
                                 ' -pre_samples=' + repr(args['mean_waveform_params']['pre_samples']) + \
                                 ' -num_spikes=' + repr(args['mean_waveform_params']['spikes_per_epoch']) + \
-                                ' -snr_radius=' + repr(args['mean_waveform_params']['snr_radius'])
+                                ' -snr_radius=' + repr(args['mean_waveform_params']['snr_radius']) + \
+                                ' -snr_radius_um=' + repr(args['mean_waveform_params']['snr_radius_um'])
                                 
         print(cwaves_cmd)
         
         # make the C_Waves call
-        subprocess.call(cwaves_cmd)
+        subprocess.Popen(cwaves_cmd,shell='False').wait()
         
         # for first version, retain original names
         if clu_version == 0:

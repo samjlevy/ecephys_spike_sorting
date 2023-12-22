@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from scipy.signal import welch
 from scipy.ndimage.filters import gaussian_filter1d
 
-from ...common.utils import find_range, rms, printProgressBar
-from ...common.OEFileInfo import get_lfp_channel_order
-from ...common.SGLXMetaToCoords import MetaToCoords
+from ecephys_spike_sorting.common.utils import find_range, rms, printProgressBar
+from ecephys_spike_sorting.common.OEFileInfo import get_lfp_channel_order
+from ecephys_spike_sorting.common.SGLXMetaToCoords import MetaToCoords
 
 def compute_channel_offsets(ap_data, ephys_params, params, xCoord, yCoord):
 
@@ -96,7 +96,6 @@ def find_surface_channel(lfp_data, ephys_params, params, xCoord, yCoord, shankIn
         
     """
     
-    nchannels = ephys_params['num_channels']
     sample_frequency = ephys_params['lfp_sample_rate']
     
     lfp_samples, lfp_channels = lfp_data.shape
@@ -117,38 +116,48 @@ def find_surface_channel(lfp_data, ephys_params, params, xCoord, yCoord, shankIn
     samples_per_pass = int(sample_frequency*(params['skip_s_per_pass'] + 1))
     max_passes = int(np.floor(lfp_samples/samples_per_pass))
     passes_used = min(n_passes, max_passes)
-
-    # use channels only on shank0, to yield a single estimate for the surace z
-    channels = np.squeeze(np.asarray(np.where(shankInd == 0)))
+    
+    channels = np.arange(lfp_channels)
     # remove reference channels
     channels = np.delete(channels, ephys_params['reference_channels'])
+    # find shank with largest channel count to do depth estimation
+    shank_id, chan_per_shank = np.unique(shankInd, return_counts=True)
+    max_shank = shank_id[np.argmax(chan_per_shank)]
+    channels = np.squeeze(np.asarray(np.where(shankInd == max_shank)))
+
     nchannels_used = channels.size
     
     chan_y = np.squeeze(yCoord[channels])
     in_saline_range = np.squeeze((chan_y > saline_range[0]) & (chan_y < saline_range[1]))
-    saline_chan = np.where(in_saline_range)
+    saline_chan = np.where(in_saline_range)[0]    
+    if saline_chan.any() == False:
+        print("No channels in saline depth range -- saline median will not be subtracted.")     
     
     max_y = np.max(chan_y)
     
-    
+    # get sorted order in y so that diff will compare channels in neighboring y sites
+    chunk_order = (np.argsort(chan_y))
+        
     for p in range(passes_used):
         
         startPt = int(sample_frequency*params['skip_s_per_pass']*p)
         endPt = startPt + int(sample_frequency)
     
         chunk = np.copy(lfp_data[startPt:endPt,channels])
-#        print('chunk shape: ')
-#        print(chunk.shape)
+        chunk = chunk[:,chunk_order]
         
         # subtract dc offset for all channels
         for ch in np.arange(nchannels_used):
             chunk[:,ch] = chunk[:,ch] - np.median(chunk[:,ch])
         
         # reduce noise by correcting each timepoint with the signal in saline
-        for ch in np.arange(nchannels_used):
+        # if there are no channels in the saline range, print messag
+        if saline_chan.any() == True:
             saline_chunk = np.squeeze(chunk[:,saline_chan])
             saline_median = np.median(saline_chunk,1)
-            chunk[:,ch] = chunk[:,ch] - saline_median
+       
+            for ch in np.arange(nchannels_used):
+                chunk[:,ch] = chunk[:,ch] - saline_median
         
         power = np.zeros((int(nfft/2+1), nchannels_used))
     
@@ -162,12 +171,15 @@ def find_surface_channel(lfp_data, ephys_params, params, xCoord, yCoord, shankIn
         in_range = find_range(sample_frequencies, 0, params['max_freq'])
         
         in_range_gamma = find_range(sample_frequencies, freq_range[0],freq_range[1])
-        
+               
         values = np.log10(np.mean(power[in_range_gamma,:],0))
 
-        values = gaussian_filter1d(values,smoothing_amount)
+        values = gaussian_filter1d(values,smoothing_amount)        
 
-        surface_channels = np.where((np.diff(values) < diff_thresh) * (values[:-1] < power_thresh) )[0]
+        # simple python notes: values[:-1] is the values array except the last element
+        # np.where returns a tuple with dimensions (1,number of elements);
+        # taking just row [0] returns an array with dimensions (number of elements,)
+        surface_channels = np.where((np.diff(values) < diff_thresh) * (values[:-1] < power_thresh) )[0]       
         surface_y = chan_y[surface_channels]
 
         if len(surface_y > 0):
@@ -182,14 +194,17 @@ def find_surface_channel(lfp_data, ephys_params, params, xCoord, yCoord, shankIn
         'surface_y' : surface_y,
         'air_y' : air_y
     }
-
+       
+    print(repr(surface_y))
+    print(repr(output_dict))
+    
     if save_figure:
         plot_results(chunk, 
                      power, 
                      in_range, 
                      values, 
                      nchannels_used,
-                     chan_y,
+                     chan_y[chunk_order],
                      surface_y, 
                      power_thresh, 
                      diff_thresh, 
@@ -204,37 +219,38 @@ def plot_results(chunk,
                  in_range, 
                  values, 
                  nchannels,
-                 chan_y,
+                 sorted_y,
                  surface_y, 
                  power_thresh, 
                  diff_thresh, 
                  figure_location):
 
     plt.figure(figsize=(5,10))
+    
     plt.subplot(4,1,1)
-    # plt.imshow(np.flipud((chunk).T), aspect='auto',vmin=-1000,vmax=1000)
-    # sort chanks by y position
-    chunk_order = np.argsort(chan_y)
-    chunk[:,:] = chunk[:,chunk_order]
-    plt.imshow((chunk).T, aspect='auto',vmin=-1000,vmax=1000)
+    # plot the raw voltage data from last pass as image,
+    # x = time, y = channel, flip channels so channels nearest surfce are at top
+    plt.imshow(np.flipud(chunk).T, aspect='auto',vmin=-1000,vmax=1000)
 
     plt.subplot(4,1,2)
-    # plt.imshow(np.flipud(np.log10(power[in_range,:]).T), aspect='auto')
-    power[:,:] = power[:,chunk_order]
-    plt.imshow(np.log10(power[in_range,:]).T, aspect='auto')
-
-    y_sorted = chan_y[chunk_order]
+    # plot the log(power) from last pass as image,
+    # x = frequency, y = channel, flip channels so channels nearest surfce are at top
+    plt.imshow(np.flipud(np.log10(power[in_range,:]).T), aspect='auto')
+   
     plt.subplot(4,1,3)
-    plt.plot(y_sorted, values[chunk_order]) 
-    plt.plot([chan_y[0],chan_y[nchannels-1]],[power_thresh,power_thresh],'--k')
-    
-    surface_index = np.min(np.where(y_sorted > surface_y))
-    plt.plot([surface_index, surface_index],[-2, 2],'--r')
+    # plot power used in threshold calculation (= mean power over input range)
+    # vs. y position. 
+    plt.plot(sorted_y, values) 
+    # horizontal line at power threshold
+    plt.plot([np.amin(sorted_y),np.amax(sorted_y)],[power_thresh,power_thresh],'--k')
+    # vertical line at inferred surface_Y
+    plt.plot([surface_y, surface_y],[-2, 2],'--r')
     
     plt.subplot(4,1,4)
-    plt.plot(y_sorted[0:nchannels-1], np.diff(values[chunk_order]))
-    plt.plot([chan_y[0],chan_y[nchannels-2]],[diff_thresh,diff_thresh],'--k')
-    
+    # plot power derivative in threshold calculation vs. y position
+    plt.plot(sorted_y[0:-1], np.diff(values))
+    # horizontal line at derivative threshold
+    plt.plot([np.amin(sorted_y),np.amax(sorted_y)],[diff_thresh,diff_thresh],'--k')
+    # vertical line at inferred surface_Y
     plt.plot([surface_y, surface_y],[-0.2, diff_thresh],'--r')
-    plt.title(surface_y)
     plt.savefig(figure_location)

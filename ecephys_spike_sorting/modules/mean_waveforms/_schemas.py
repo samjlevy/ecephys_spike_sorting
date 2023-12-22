@@ -14,6 +14,7 @@ class MeanWaveformParams(DefaultSchema):
     cWaves_path = InputDir(require=False, help='directory containing the TPrime executable.')
     use_C_Waves = Bool(require=False, default=False, help='Use faster C routine to calculate mean waveforms')
     snr_radius = Int(require=False, default=8, help='disk radius (chans) about pk-chan for snr calculation in C_waves')
+    snr_radius_um = Int(require=False, default=8, help='disk radius (um) about pk-chan for snr calculation in C_waves')
     mean_waveforms_file = String(required=True, help='Path to mean waveforms file (.npy)')
 
 

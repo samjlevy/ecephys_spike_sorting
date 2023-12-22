@@ -2,7 +2,7 @@
 
 ![ecephys_spike_sorting_icon](icon.png)
 
-Modules for processing **e**xtra**c**ellular **e**lectro**phys**iology data from Neuropixels probes, originally developed at the Allen Institute for Brain Science. This fork has been modified to run with SpikeGLX data, including integration of CatGT (preprocessing), C_Waves(calculation of SNR and mean waveforms) and TPrime (synchronization across data streams).
+Modules for processing **e**xtra**c**ellular **e**lectro**phys**iology data from Neuropixels probes, originally developed at the Allen Institute for Brain Science. This fork has been modified to run with SpikeGLX data, including integration of CatGT (preprocessing), C_Waves(calculation of SNR and mean waveforms) and TPrime (synchronization across data streams). The data can be sorted with any version of Kilosort; a version of IBL's pykilosort is also available.
 
 Code including modifications for SpikeGLX
 https://github.com/jenniferColonell/ecephys_spike_sorting
@@ -29,7 +29,7 @@ Further documentation can be found in each module's README file. For more inform
 
 1. [catGT_helper](ecephys_spike_sorting/modules/catGT_helper/README.md): Concatenates trials, applies filters, removes artifacts in neural data. Finds edges in sync and auxiliary channels.
 
-2. [kilosort_helper](ecephys_spike_sorting/modules/kilosort_helper/README.md): Generates config files for Kilosort based on SpikeGLX metadata and launches spike sorting via the Matlab engine.
+2. [kilosort_helper](ecephys_spike_sorting/modules/kilosort_helper/README.md): Generates config files for Kilosort based on SpikeGLX metadata and launches spike sorting via the Matlab engine. [pykilosort helper]((ecephys_spike_sorting/modules/pykilosort_helper/README.md) runs the IBL version of pykilosort; the only changes in fork used in this pipeline are to allow completely skipping filtering and CAR, because these functions are handled in CatGT.
 
 3. [kilosort_postprocessing](ecephys_spike_sorting/modules/kilosort_postprocessing/README.md): Removes putative double-counted spikes from Kilosort output. The algorithm has been changed from the original to delete all between cluster duplicates from the cluster with lower amplitude.
 
@@ -55,14 +55,16 @@ Further documentation can be found in each module's README file. For more inform
 
 ## Installation and Usage for the SpikeGLX pipeline
 
-These modules have been tested with Python 3.8.10.
+These modules have been tested with Python 3.8.10 and 3.9.
 
-We recommend using [pipenv](https://github.com/pypa/pipenv) to run these modules.
+If you only plan to use only the MATLAB version of Kilosort, you can install and run using the procedure recommended by the original authors at the Allen Institute, which uses [pipenv](https://github.com/pypa/pipenv).
+
+If you want to run pykilosort, or just prefer Anaconda, please skip down to [Installation with Anaconda](#Installation-with-Anaconda).
 
 All of the components of the SpikeGLX pipeline are available in Windows and Linux, but the pipeline has only been tested in Windows. These instructions are for Windows 10.
 
 
-### Install pipenv
+# Installation with pipenv
 
 If the computer doesn't already have python, install it; the current version of the pipeline environmet requires at least 3.8. The currently tested version is 3.8.10.  Download the Windows x86-64 executable installer and run the exe, selecting the "Add Python to PATH" checkbox at the bottom of the dialog.
 
@@ -94,7 +96,7 @@ In the command window navigate to the ecephys_spike_sorting directory at the top
 
 cd \Users\labadmin\Documents\ecephys_clone\ecephys_spike_sorting
 
-Build the environment -- it will use the Pipfile located in this directory, and create the virtual environment in the local directory. Currently (January 2022) the latest version of setuptools appears to not function with installation of MATLAB, so after the install, we activate the environment and use pip to uninstall setuptools and install 59.8.0.  Finally, install the ecephys code in the environment.
+Build the environment -- it will use the Pipfile located in this directory, and create the virtual environment in the local directory. Currently (May 2023) the latest version of setuptools appears to not function with installation of MATLAB, so after the install, we activate the environment and use pip to uninstall setuptools and install 59.8.0.  Finally, install the ecephys code in the environment.
 
 ```shell
     $ set PIPENV_VENV_IN_PROJECT=1
@@ -108,11 +110,11 @@ Build the environment -- it will use the Pipfile located in this directory, and 
 
 The python version and MATLAB version need to be compatible. For Python 3.8, this requires MATLAB 2020b or later. The code has been tested only with MATLAB 2021b.
 
-Install MATLAB 2021b ? side by side installations of MATLAB are fine, so there is no need to delete earlier versions, and running code specific to an earlier version should be possible.
+Install MATLAB 2021b. Side by side installations of MATLAB are fine, so there is no need to delete earlier versions, and running code specific to an earlier version should be possible.
 
-Open MATLAB 2021b, and enter the command gpuDevice(). You make get a message that there are no GPU devices with compatible drivers. Later versions of MATLAB also require more recent drivers for the GPU card ? MATLAB 2021b requires version 10.1 or later of the Nvidia drivers. 
+Open MATLAB 2021b, and enter the command gpuDevice(). You make get a message that there are no GPU devices with compatible drivers. Later versions of MATLAB also require more recent drivers for the GPU card. MATLAB 2021b requires version 10.1 or later of the Nvidia drivers. 
 
-If you get that message, quit MATLAB. Update the drivers for the GPU card -- this can be done with the Device Manager in Windows 10, and will also happen automatically if you update the CUDA Toolkit. The pipeline has been tested with CUDA Toolkit 11, which is compatible with GPUs back to the NVIDIA Maxwell architecture. After updating, restart MATLAB and enter gpuDevice() again to make sure it is recognized.
+If you get that message, quit MATLAB. Update the drivers for the GPU card; this can be done with the Device Manager in Windows 10, and will also happen automatically if you update the CUDA Toolkit. The pipeline has been tested with CUDA Toolkit 11.2 (by the way, all CUDA toolkit versions are backward compatible to older hardware). After updating, restart MATLAB and enter gpuDevice() again to make sure it is recognized.
 
 The MATLAB engine for python must be installed in the local instance of python run by the virtual environment. Open the command prompt as administrator, navigate to the ecephys directory, and enter:
 
@@ -134,18 +136,93 @@ NOTE: This install needs to be repeated whenenver the virtual environment is reb
 
 After completing the install, close the command window and reopen as a normal user (not administrator) to run scripts.
 
-### Install CatGT version 2.5, TPrime, and C_Waves
+# Installation with Anaconda
+
+Ensure that CUDA Toolkit 11.2 or later is installed. The pipeline is currently tested with 11.2.
+
+If not already present, install Miniconda with python 3.9 (https://docs.conda.io/en/latest/miniconda.html).
+
+Create a folder to hold the environments. Use git bash to clone ecephys repo (https://github.com/jenniferColonell/ecephys_spike_sorting)
+and pykilosort repo (https://github.com/jenniferColonell/pykilosort).
+
+Open an Anconda prompt and navigate to the pykilosort folder. Create an environment to hold both pykilosort and ecephys using the yml, and activate when complete.
+
+```shell
+conda env create -f ./ece_pyks2.yml
+conda activate ece_pyks2
+```
+
+As discussed in the pipenv inatallation above, the current version of setuptools appears to be buggy. Replace it:
+
+```shell
+pip uninstall setuptools
+pip install setuptools==59.8.0
+```
+
+To install pykilsort and other components, navigate to the pykilosort directory and run the commands: 
+
+```shell
+pip install -e .
+pip install cython
+conda install -c conda-forge pyfftw
+pip install git+https://github.com/int-brain-lab/ibllib.git
+pip install -U phylib
+```
+Next install ecephys. To force the correct versions of some components, they must be uninstalled and reinstalled manually. This will be corrected in a later verison. From the anaconda prompt, navigate to the ecephys_spike_sorting directory (containing setup.py) and run the commands:
+
+```shell
+pip install -e .
+pip uninstall argschema
+pip install argschema==1.17.5
+pip uninstall marshmallow
+pip install marshmallow==2.19.2
+pip install h5py
+```
+
+### Set up to run MATLAB from Python in Anconda
+
+The python version and MATLAB version need to be compatible. To be compatible with python 3.9, the MATLAB version must be 2021b or later.
+
+Install MATLAB 2021b. Side by side installations of MATLAB are fine, so there is no need to delete earlier versions.
+
+Open MATLAB 2021b, and enter the command gpuDevice(). You make get a message that there are no GPU devices with compatible drivers. Later versions of MATLAB also require more recent drivers for the GPU card. MATLAB 2021b requires version 10.1 or later of the Nvidia drivers. 
+
+If you get that message, quit MATLAB. Update the drivers for the GPU card; this can be done with the Device Manager in Windows 10, and will also happen automatically if you update the CUDA Toolkit. The pipeline has been tested with CUDA Toolkit 11.2 (by the way, all CUDA toolkit versions are backward compatible to older hardware). After updating, restart MATLAB and enter gpuDevice() again to make sure it is recognized.
+
+The MATLAB engine for python must be installed in the local instance of python run by the virtual environment. Open an Anaconda prompt as administrator, activate the environment, and then navigate the setup script for the MATLAB engine:
+
+```shell
+conda activate ece_pyks2
+cd <matlabroot>\extern\engines\python
+python setup.py install
+```
+
+Replace <matlabroot> with the root directory of your MATLAB 2021b installation, for example: 
+
+C:\Program Files\MATLAB\R2021b
+
+For more details about installing the python engine, see the MATAB documentation:
+
+https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html
+
+NOTE: This install needs to be repeated whenenver the virtual environment is rebuilt (e.g. after creating a new clone or download of the repo).
+
+After completing the install, close the Anaconda window and reopen as a normal user (not administrator) to run scripts.
+
+
+
+# Install CatGT, TPrime, and C_Waves
 
 [CatGT](http://billkarsh.github.io/SpikeGLX/#catgt), [TPrime](http://billkarsh.github.io/SpikeGLX/#tprime), and [C_Waves](http://billkarsh.github.io/SpikeGLX/#post-processing-tools) are each available on the SpikeGLX download page. To install, simply download each zipped folder and extract to a convenient location, see the instructions [here](http://billkarsh.github.io/SpikeGLX/#command-line-tool-installation). The paths to these executables must then be set in **create_input_json.py**. 
 
-NOTE: The pipeline is currently compatible only with CatGT 2.5; a 3.0 compatible version will be released soon.
+NOTE: The pipeline is now compatible with the latest CatGT. If you are updating the pipeline, make sure you also get the most recent versions of CatGT, TPrime, and C_Waves.
 
 
-## Usage
+# Usage
 
 ### Edit parameters for your system and runs
 
-Parameters are set in two files. Values that are constant across runs?like paths to code, parameters for sorting, etc ? are set in **create_input_json.py**. Parameters that need to be set per run (run names, which triggers and probes to process?) are set in script files.
+Parameters are set in two files. Values that are constant across runs—like paths to code, parameters for sorting, etc – are set in **create_input_json.py**. Parameters that need to be set per run (run names, which triggers and probes to process…) are set in script files.
 
 In **create_input_json.py**, be sure to set these paths and parameters for your system:
 
@@ -160,9 +237,9 @@ In **create_input_json.py**, be sure to set these paths and parameters for your 
 
 >>> Note: The kilosort_output_temp folder contains the kilosort residual file and also temporary copies of the config and master file. With kilosort 2.5, this "temporary" file--which has been drift corrected--may be used for manual curation in phy. If you want it to be kept available, set the parameter ks_copy_fproc=1; then a copy will be made with the kilosort output and the params.py adjusted automatically.
 
-Other ?mostly constant? parameters in **create_input_json.py**:
+Other rarely changed parameters in **create_input_json.py**:
 
-- Most Kilosort2 parameters. 
+- Most Kilosort and pykilosort parameters. 
 - kilosort post processing params 
 - quality metrics params
 
@@ -187,10 +264,18 @@ For either script, edit to set the destination for the json_files, and the locat
 
 These scripts are easy to customize to send the output to different directories. 
 
-To run scripts, navigate to the ecephys_spike_sorting\scripts directory and enter:
+To run scripts in pipenv, open a Windows command line, navigate to the ecephys_spike_sorting\scripts directory and enter:
 
 ```shell
+   pipenv shell
    (.venv)$ python <script_name.py>
+```
+
+To run scripts in Anaconda, open an Anacodna prompt, activate the environment, navigate to the ecephys_spike_sorting\scripts directory and enter:
+
+```shell
+   conda activate ece_pyks2 
+   python <script_name.py>
 ```
 
 ### Running metrics modules on manually curated data
@@ -324,4 +409,4 @@ This code is an important part of the internal Allen Institute code base and we 
 See [Allen Institute Terms of Use](https://alleninstitute.org/legal/terms-use/)
 
 
-© 2019 Allen Institute for Brain Science
+Â© 2019 Allen Institute for Brain Science
