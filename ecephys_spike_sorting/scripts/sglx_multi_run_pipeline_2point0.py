@@ -6,9 +6,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-from helpers import SpikeGLX_utils
-from helpers import log_from_json
-from helpers import run_one_probe
+from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
+from ecephys_spike_sorting.scripts.helpers import log_from_json
+from ecephys_spike_sorting.scripts.helpers import run_one_probe
 from create_input_json import createInputJson
 
 # How to modify this script to work for a probe survey:

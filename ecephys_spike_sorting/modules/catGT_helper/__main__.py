@@ -8,7 +8,8 @@ import shutil
 import numpy as np
 from pathlib import Path
 
-from ...common.utils import read_probe_json, get_repo_commit_date_and_hash, rms
+#from ...common.utils import read_probe_json, get_repo_commit_date_and_hash, rms
+#from ...common.utils import read_probe_json, rms
 from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
 
 def run_CatGT(args):
@@ -35,15 +36,15 @@ def run_CatGT(args):
         if ['catGT_helper_params']['useGeom']:
             inner_um = args['catGT_helper_params']['loccar_inner_um']
             outer_um = args['catGT_helper_params']['loccar_outer_um']
-            car_str = ' -loccar_um=' + repr(inner_um) + ',' + repr(outer_um)
+            car_str = '-loccar_um=' + repr(inner_um) + ',' + repr(outer_um)
         else:
             inner_site = args['catGT_helper_params']['loccar_inner']
             outer_site = args['catGT_helper_params']['loccar_outer']
-            car_str = ' -loccar=' + repr(inner_site) + ',' + repr(outer_site)
+            car_str = '-loccar=' + repr(inner_site) + ',' + repr(outer_site)
     elif car_mode == 'gbldmx':
-        car_str = ' -gbldmx'    
+        car_str = '-gbldmx'    
     elif car_mode == 'gblcar':
-        car_str = ' -gblcar'
+        car_str = '-gblcar'
     elif car_mode == 'None' or car_mode == 'none':
         car_str = ''
         

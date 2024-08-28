@@ -73,15 +73,59 @@ def EphysParams(metaFullPath):
     
     uVPerBit = Chan0_uVPerBit(meta, probe_type)
     
+    # get number of AP and SY channels in file
+    # used in waveform metrics grab only AP channels for calculations
+    # Note that with quad base SY can be larger than 1
+    nAP, nLF, nSY = SGLXMeta.ChannelCountsIM(meta)
+    
     if 'snsGeomMap' in meta:
         useGeom = True
     else:
         useGeom = False
+    
         
     # read shank map to get disabled (reference) channels
     ref_channels = GetDisabledChan(meta, useGeom)
-      
-    return(probe_type, sample_rate, num_channels, ref_channels, uVPerBit, useGeom)
+    
+    #xCoord, yCoord, shankInd, connected = SGLXMeta.MetaToCoords(metaPath,-1)
+    xCoord, yCoord, shankInd, connected, NchanTOT = SGLXMeta.MetaToCoords(metaPath,-1)
+    sh, sh_counts = np.unique(shankInd, return_counts=True)
+    # get vpitch, hpitch, nColumn from shank with the largest numbers of sites
+    sh_mode = sh[np.argmax(sh_counts)]
+    sh_mode_sites = np.squeeze( np.argwhere(shankInd == sh_mode))
+    x_sh = xCoord[sh_mode_sites]
+    y_sh = yCoord[sh_mode_sites]
+    nColumn = len(np.unique(x_sh))    
+    
+    # NP 1.0 staggered patterns have been historically as 2 columns. These can
+    # be tricky to identify from the coorindates alone AND there are some type 0 
+    # probes that are NOT staggered.
+    vpitch = 0
+    hpitch = 0
+    stag_types = ['3A', 'NP1', 'NP1200', 'NP1210', 'NP1020', 'NP1021', 'NP1030', 'NP1031']
+    if (probe_type in stag_types) and (nColumn == 4):
+        nColumn = 2
+        vpitch = 20  # happens to be true for all staggered configurations
+        if probe_type in ['NP1020', 'NP1021', 'NP1030', 'NP1031']:
+            hpitch = 87
+        else:
+            hpitch = 32
+    else:
+        # these are linear or square pattern probes        
+        xval, xval_counts = np.unique(x_sh, return_counts=True)        
+        xval_mode = xval[np.argmax(xval_counts)]
+        xval_mode_sites = np.squeeze( np.argwhere(x_sh == xval_mode))        
+        yval_col = y_sh[xval_mode_sites]        
+        if len(yval_col) > 1:
+            ydiff = np.diff(np.sort(yval_col))
+            ydiffval, ydiff_counts = np.unique(ydiff, return_counts=True)
+            vpitch = ydiff[np.argmax(ydiff_counts)]
+        if len(xval) > 1:
+            xdiff = np.diff(np.sort(xval))
+            xdiffval, xdiff_counts = np.unique(xdiff, return_counts=True)
+            hpitch = xdiff[np.argmax(xdiff_counts)]
+    
+    return(probe_type, sample_rate, num_channels, ref_channels, uVPerBit, vpitch, hpitch, nColumn, nAP, nSY, useGeom)
 
 
 # Return gain for imec channels.
@@ -253,7 +297,8 @@ def ParseCatGTLog(logPath, run_name, gate_string, prb_list):
 
 def CreateNITimeEvents(catGT_run_name, gate_string, catGT_dest):
 
-    # new version of catGT (1.9) always creates an output NI metadata file
+    # CatGT 1.9 and later always creates an output NI metadata file
+    # events are simply the times for the collected data
  
     output_folder = 'catgt_' + catGT_run_name + '_g' + gate_string
     niMeta_filename = catGT_run_name + '_g' + gate_string + '_tcat.nidq.meta'
@@ -270,10 +315,18 @@ def CreateNITimeEvents(catGT_run_name, gate_string, catGT_dest):
     out_path = os.path.join(catGT_dest, output_folder, out_name)
     np.save(out_path,ni_times)
     
-    # check for presence of an fyi file, indicating run with catgt 3.0 or later
-    fyi_path = Path(os.path.join(catGT_dest, output_folder, catGT_run_name + '_g' + gate_string + '_all_fyi.txt'))
-    print(fyi_path)
-    fyi_exists = Path(fyi_path).is_file()
+    # check for presence of an all_fyi file, indicating run with catgt 3.0 or later in pipeline
+    # supercat output will be named _fyi.txt 
+    fyi_all_path = Path(os.path.join(catGT_dest, output_folder, catGT_run_name + '_g' + gate_string + '_all_fyi.txt'))
+    fyi_single_path = Path(os.path.join(catGT_dest, output_folder, catGT_run_name + '_g' + gate_string + '_fyi.txt'))
+    fyi_exists = False
+    if Path(fyi_all_path).is_file():
+        fyi_exists = True
+        fyi_path = fyi_all_path
+    elif Path(fyi_single_path).is_file():
+        fyi_exists = True
+        fyi_path = fyi_single_path
+
     if fyi_exists:
         # append a line for the newly created times file        
         file_fyi = open(fyi_path, "a")  # append mode
@@ -281,3 +334,128 @@ def CreateNITimeEvents(catGT_run_name, gate_string, catGT_dest):
         file_fyi.close()
 
     return
+
+def Chans2PrintStr(chan_bool):
+    # return printer string (runs of sequential channels given by a:b) for 
+    # an array of channel indicies
+    # code adapted from Bill Karsh
+    # create a logical array with maxChan elements
+    chan_ind = np.where(chan_bool)
+    nb = len(chan_bool)
+    min_ind = np.min(chan_ind)
+
+    out_str = repr(min_ind)
+    rn = False
+    
+    # starting from the first channel
+    for ib in range(min_ind+1, nb):
+        if not chan_bool[ib]:
+             # if we were in a run, the last index was the end of it
+            if rn:
+                out_str = out_str + ':' + repr(ib-1)
+                rn = False
+        else:
+            if not chan_bool[ib-1]:
+                # if the last index was not included start a new entry
+                out_str = out_str + ',' + repr(ib)
+            else:
+                # if the last index was included, we have a run
+                rn = True
+    
+    # after looping over all indices, add last entry if in a run
+    if rn:
+        out_str = out_str + ':' + repr(nb-1)            
+    
+    return out_str
+    
+def CreateShankSaveString(metaFullPath):
+    # first create Path object from string
+    metaPath = Path(metaFullPath)
+    metaStem = metaPath.stem
+    imec_pos = metaStem.rfind('imec',0)
+    ap_pos = metaStem.rfind('.ap',0) 
+    if imec_pos > 0 and ap_pos > 0:
+        # good metadata name
+        imStr = metaStem[imec_pos:ap_pos]
+        if len(imStr) == 4:
+            prb_ind = 0      # 3A data, no probe index
+        else:
+            prb_ind = int(imStr[4:len(imStr)])
+    else:
+       print('Incorrect metadata filenmae.') 
+       nShank = 0
+       save_str = ''
+       out_ind_list = []
+       return nShank, save_str, out_ind_list
+    
+    # check for a sync string in the input
+    meta = SGLXMeta.readMeta(metaPath)
+    AP, LF, SY = SGLXMeta.ChannelCountsIM(meta)
+    orig_chan_ind = SGLXMeta.OriginalChans(meta)    
+    ap_chan_ind = orig_chan_ind[0:AP]
+    sy_ind = orig_chan_ind[len(orig_chan_ind)-SY:len(orig_chan_ind)]
+    print(repr(sy_ind))
+
+    xCoord, yCoord, shankInd, connected = SGLXMeta.MetaToCoords(metaPath,-1)    
+    sh, sh_counts = np.unique(shankInd, return_counts=True)
+    
+    save_str = ''
+    out_ind_list = []
+    nShank = len(sh)
+    for i in range(nShank):
+        # get channels on this shank
+        sh_chan_bool = (shankInd == sh[i])
+        all_chan_bool = np.ndarray((np.max(orig_chan_ind)+1,),dtype=bool)
+        all_chan_bool[:] = False
+        all_chan_bool[sy_ind] = True
+        all_chan_bool[ap_chan_ind[sh_chan_bool]] = True
+        sh_chan_str = Chans2PrintStr(all_chan_bool)        
+        out_ind_str = str(int(1000 + 10*prb_ind + sh[i]))
+        out_ind_list.append(out_ind_str)
+        save_str = save_str + ' -save=2,' + repr(prb_ind) + ',' + out_ind_str + ',' + sh_chan_str
+        
+    return nShank, save_str, out_ind_list
+
+def CreateSepShanksString(metaFullPath):
+    # create sepShanks string for CatGT 44 and later
+    # The sepShanks option automatically generates a save 
+    # string with the channels for each shank.
+    # For the 2020 probe (Quad base) the SYNC signal for each shank
+    # is saved with the neural data. For other multishank probes, the 
+    # common SYNC signal is saved with each shank.
+    # first create Path object from string
+    metaPath = Path(metaFullPath)
+    metaStem = metaPath.stem
+    imec_pos = metaStem.rfind('imec',0)
+    ap_pos = metaStem.rfind('.ap',0) 
+    if imec_pos > 0 and ap_pos > 0:
+        # good metadata name
+        imStr = metaStem[imec_pos:ap_pos]
+        if len(imStr) == 4:
+            prb_ind = 0      # 3A data, no probe index
+        else:
+            prb_ind = int(imStr[4:len(imStr)])
+    else:
+       print('Incorrect metadata filenmae.') 
+       nShank = 0
+       sepShanks_str = ''
+       out_ind_list = []
+   
+    meta = SGLXMeta.readMeta(metaPath)
+    geomMap = meta['snsGeomMap'].split(sep=')')
+    currList = geomMap[0].split(',')
+    nShank = int(currList[1]);
+    xCoord, yCoord, shankInd, connected = SGLXMeta.MetaToCoords(metaPath,-1)    
+    sh, sh_counts = np.unique(shankInd, return_counts=True)
+     
+    sepShanks_str = '-sepShanks=' + repr(prb_ind)
+    out_ind_list = []
+    
+    for i in range(nShank):  
+        out_ind_str = str(int(1000 + 10*prb_ind + i))
+        sepShanks_str = sepShanks_str + ','  + out_ind_str
+        if np.isin(i,sh):
+            out_ind_list.append(out_ind_str)
+        
+           
+    return len(sh), sepShanks_str, out_ind_list

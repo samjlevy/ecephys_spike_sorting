@@ -2,7 +2,7 @@ import os, io, json, sys
 
 if sys.platform == 'linux':
     import pwd
-from helpers import SpikeGLX_utils
+from ecephys_spike_sorting.scripts.helpers import SpikeGLX_utils
 
 import numpy as np
 
@@ -75,16 +75,16 @@ def createInputJson(output_file,
                     fr_min = 0.05,
                     isi_viol_max = 0.2,
                     n_viol_max = 1,
-                    ks_trange = '[0 Inf]',
-                    ks_chanMap = 'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'
+                    ks_trange = '[0 Inf]'                    
                     ):
+                    #  ks_chanMap = 'C:/Users/Niflheim/Documents/GitHub/SpikeGLX_tools/chanMap.mat'///
 
     # hard coded paths to code on your computer and system
-    ecephys_directory = r'C:\Users\Niflheim\Documents\GitHub\External\ecephys_spike_sorting\ecephys_spike_sorting'
+    ecephys_directory = r'C:\Users\samjlevy\Documents\GitHub\ecephys_spike_sorting\ecephys_spike_sorting'
     
     # location of kilosort respository and kilosort version
 
-    kilosort_repository = r'C:\Users\Niflheim\Documents\GitHub\External\Kilosort'
+    kilosort_repository = r'C:\Users\samjlevy\Documents\GitHub\Kilosort'
 
     KS2ver = '3.0'      # must equal '3.0', '2.5' or '2.0', and match the kiilosort_repository
     
@@ -92,10 +92,10 @@ def createInputJson(output_file,
     if KS2ver == '3.0':
         include_pcs = False  # set to false for KS2ver = '3.0'
     
-    npy_matlab_repository = r'C:\Users\Niflheim\Documents\GitHub\External\npy-matlab'
-    catGTPath = r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\CatGT-win'
-    tPrime_path=r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\TPrime-win'
-    cWaves_path=r'C:\Users\Niflheim\Documents\GitHub\SpikeGLX_tools\C_Waves-win'
+    npy_matlab_repository = r'C:\Users\samjlevy\Documents\GitHub\npy-matlab'
+    catGTPath = r'C:\Kilosort_Applications\CatGT-win'
+    tPrime_path=r'C:\Kilosort_Applications\TPrime-win'
+    cWaves_path=r'C:\Kilosort_Applications\C_Waves-win'
     
      
     # for config files and kilosort working space
@@ -132,12 +132,16 @@ def createInputJson(output_file,
         # 
         if input_meta_path is not None:
             probe_type, sample_rate, num_channels, reference_channels, \
-                uVPerBit, useGeom = SpikeGLX_utils.EphysParams(input_meta_path)  
+            uVPerBit, vpitch, hpitch, nColumn, nAP, nSY, useGeom\
+                = SpikeGLX_utils.EphysParams(input_meta_path) 
+            #probe_type, sample_rate, num_channels, reference_channels, \
+            #    uVPerBit, useGeom = SpikeGLX_utils.EphysParams(input_meta_path)  
             print('SpikeGLX params read from meta')
             print('probe type: {:s}, sample_rate: {:.5f}, num_channels: {:d}, uVPerBit: {:.4f}'.format\
                   (probe_type, sample_rate, num_channels, uVPerBit))
             print('reference channels: ' + repr(reference_channels))
         
+            print('vpitch: ' + str(vpitch) + ', hpitch: ' + str(hpitch))
         #print('kilosort output directory: ' + kilosort_output_directory )
 
         
@@ -149,9 +153,9 @@ def createInputJson(output_file,
 
     # geometry params by probe type. expand the dictionaries to add types
     # vertical probe pitch vs probe type
-    vpitch = {'3A': 20, 'NP1': 20, 'NP21': 15, 'NP24': 15, 'NP1100': 6, 'NP1300':20}  
-    hpitch = {'3A': 32, 'NP1': 32, 'NP21': 32, 'NP24': 32, 'NP1100': 6, 'NP1300':48} 
-    nColumn = {'3A': 2, 'NP1': 2, 'NP21': 2, 'NP24': 2, 'NP1100': 8,'NP1300':2} 
+    vpitch = {'3A': 20, 'NP1': 20, 'NP21': 15, 'NP24': 15, 'NP1100': 6, 'NP1300':20, 'NP2013':15}  
+    hpitch = {'3A': 32, 'NP1': 32, 'NP21': 32, 'NP24': 32, 'NP1100': 6, 'NP1300':48, 'NP2013':32} 
+    nColumn = {'3A': 2, 'NP1': 2, 'NP21': 2, 'NP24': 2, 'NP1100': 8,'NP1300':2, 'NP2013': 2} 
     
     
     # CatGT needs the inner and outer redii for local common average referencing
@@ -281,7 +285,7 @@ def createInputJson(output_file,
                 "saveRez" : ks_saveRez,
                 "copy_fproc" : ks_copy_fproc,
                 "fproc" : fproc_str,
-                "chanMap" : f"'{ks_chanMap}'",
+                "chanMap" : "'D:\Kilosort_scratch/chanMap.mat'",
                 "fshigh" : 150,
                 "minfr_goodchannels" : ks_minfr_goodchannels,
                 "Th" : ks_Th,

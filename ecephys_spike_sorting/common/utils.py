@@ -6,7 +6,7 @@ import sys
 import time
 import pathlib
 
-from git import Repo
+#from git import Repo
 
 
 def find_range(x,a,b,option='within'):
@@ -457,8 +457,11 @@ def get_repo_commit_date_and_hash(repo_location):
 
     if os.path.exists(repo_location):
         try:
-            repo = Repo(repo_location)
-            headcommit = repo.head.commit
+            #repo = Repo(repo_location)
+            #headcommit = repo.head.commit
+            print('Sam commented this out on 240410')
+            repo = ''
+            headcommit = ''
             commit_date = time.strftime("%a, %d %b %Y %H:%M", time.gmtime(headcommit.committed_date))
             commit_hash = headcommit.hexsha
         except:

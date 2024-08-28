@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
-from helpers import log_from_json
+from ecephys_spike_sorting.scripts.helpers import log_from_json
 
 
 # Given json files for CatGT and modules, all processing unique to this 

@@ -16,16 +16,16 @@ from scipy.signal import butter, filtfilt, medfilt
 
 from . import matlab_file_generator
 from ...common.SGLXMetaToCoords import MetaToCoords
-from ...common.utils import read_probe_json, get_repo_commit_date_and_hash, rms
+#from ...common.utils import read_probe_json, get_repo_commit_date_and_hash, rms
+from ...common.utils import read_probe_json, rms
 
 def run_kilosort(args):
-
+    
     print('ecephys spike sorting: kilosort helper module')
 
     print('master branch -- single main KS2/KS25/KS3')
 
-
-    commit_date, commit_time = get_repo_commit_date_and_hash(args['kilosort_helper_params']['kilosort_repository'])
+    #commit_date, commit_time = get_repo_commit_date_and_hash(args['kilosort_helper_params']['kilosort_repository'])
 
     input_file = args['ephys_params']['ap_band_file']
     input_file_forward_slash = input_file.replace('\\','/')
@@ -200,11 +200,11 @@ def run_kilosort(args):
     nTot = spkTemplate.size
        
     return {"execution_time" : execution_time,
-            "kilosort_commit_date" : commit_date,
-            "kilosort_commit_hash" : commit_time,
             "mask_channels" : np.where(mask == False)[0],
             "nTemplate" : nTemplate,
             "nTot" : nTot } # output manifest
+            #"kilosort_commit_date" : commit_date,
+            #"kilosort_commit_hash" : commit_time,
 
 def get_noise_channels(raw_data_file, num_channels, sample_rate, bit_volts, noise_threshold=20):
 
@@ -237,8 +237,11 @@ def get_noise_channels(raw_data_file, num_channels, sample_rate, bit_volts, nois
     for i in range(D.shape[1]):
         D_filt[:,i] = filtfilt(b, a, D[:,i])
 
+    print('testing new rms')
+    #rms = np.power(np.mean(np.power(data.astype('float32'),2)),0.5)
+    #rms_values = np.apply_along_axis(np.power(np.mean(np.power(data.astype('float32'),2)),0.5), axis=0, arr=D_filt)
     rms_values = np.apply_along_axis(rms, axis=0, arr=D_filt)
-
+    
     above_median = rms_values - medfilt(rms_values,11)
     
     print('number of noise channels: ' + repr(sum(above_median > noise_threshold)))

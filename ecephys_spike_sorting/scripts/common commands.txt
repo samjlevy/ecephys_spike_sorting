@@ -1,0 +1,22 @@
+# Common commands used with ref to ecephys
+
+cd C:\Users\samjlevy\Documents\GitHub\ecephys_spike_sorting\
+pipenv shell
+
+cd C:\Users\samjlevy\Documents\GitHub\ecephys_spike_sorting\ecephys_spike_sorting\scripts
+python sglx_multi_run_pipeline_many_probes2.py
+
+
+
+
+cd C:\Users\samjlevy\Documents\GitHub\ecephys_spike_sorting\
+pip install -e .
+
+
+
+python sglx_multi_run_pipeline_many_probes2.py
+
+conda activate phy2
+
+phy extract-waveforms params.py 
+phy template-gui params.py
